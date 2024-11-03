@@ -19,7 +19,7 @@ import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { instructions } from '../utils/conversation_config.js';
 import { WavRenderer } from '../utils/wav_renderer';
 
-import { X, Edit, Zap, ArrowUp, ArrowDown } from 'react-feather';
+import { X, LogOut, Zap, ArrowUp, ArrowDown } from 'react-feather';
 import { Button } from '../components/button/Button';
 import { Toggle } from '../components/toggle/Toggle';
 import { Map } from '../components/Map';
@@ -27,6 +27,9 @@ import { TopicImageView } from '../components/TopicImageView';
 
 import './ConsolePage.scss';
 import { isJsxOpeningLikeElement } from 'typescript';
+
+import { Theme } from '../lib/themes';
+import apiService from '../lib/apiServer';
 
 /**
  * Type for result from get_weather() function call
@@ -55,7 +58,16 @@ interface RealtimeEvent {
   event: { [key: string]: any };
 }
 
-export function ConsolePage() {
+const generateRandomInt = (min: number, max: number) => {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+interface ConsolePageProps {
+  onLogout: () => void;
+}
+
+// export function ConsolePage() {
+const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout }) => {
   /**
    * Ask user for API Key
    * If we're using the local relay server, we don't need this
@@ -125,7 +137,11 @@ export function ConsolePage() {
     lng: -122.418137,
   });
   const [marker, setMarker] = useState<Coordinates | null>(null);
-  const [showEvents, setShowEvents] = useState(true);
+
+  // topic selection
+  const [themeId, setThemeId] = useState<string>("001");
+  const [topicIdList, setTopicIdList] = useState<string[]>([]);
+  const [topics, setTopics] = useState<string[]>([]);
 
   /**
    * Utility for formatting the timing of logs
@@ -168,6 +184,12 @@ export function ConsolePage() {
     const client = clientRef.current;
     const wavRecorder = wavRecorderRef.current;
     const wavStreamPlayer = wavStreamPlayerRef.current;
+
+    // Init theme
+    const _themeId = String(generateRandomInt(1, 95)).padStart(3, '0');
+    const theme = (await apiService.getTheme(localStorage.getItem('api_token') ?? "", _themeId)).theme as Theme
+    localStorage.setItem('theme', JSON.stringify(theme));
+    setThemeId(_themeId);
 
     // Set state variables
     startTimeRef.current = new Date().toISOString();
@@ -461,20 +483,12 @@ export function ConsolePage() {
         name: 'display_topic_images',
         description: 'Display all three topic images on the screen',
         parameters: {
-          type: 'object',
-          properties: {
-            theme_id: {
-              type: 'string',
-              description:
-                'the theme id',
-            },
-          },
-          required: ['key', 'value'],
         },
       },
-      async ({ theme_id }: { theme_id: string }) => {
-        // TODO display image based on the theme_id
-        console.log(`display image theme_id: ${theme_id}`);
+      async () => {
+        console.log(`display image theme_id: ${themeId}`);
+        setTopicIdList(['1', '2', '3'])
+        setTopics(JSON.parse(localStorage.getItem('theme') ?? "")['topics']);
       }
     );
 
@@ -523,11 +537,11 @@ export function ConsolePage() {
         <div className="content-api-key">
           {!LOCAL_RELAY_SERVER_URL && (
             <Button
-              icon={Edit}
+              icon={LogOut}
               iconPosition="end"
               buttonStyle="flush"
-              label={`api key: ${apiKey.slice(0, 3)}...`}
-              onClick={() => resetAPIKey()}
+              label={`Log Out`}  // {`api key: ${apiKey.slice(0, 3)}...`}
+              onClick={() => onLogout()}
             />
           )}
         </div>
@@ -539,9 +553,9 @@ export function ConsolePage() {
           >
             <div className="topic-image-container border rounded-lg p-4 flex flex-col gap-2 w-200 m-3 h-auto" style={{ maxWidth: '100%', height: 'auto' }}>
               <TopicImageView
-                themeId="001"
-                topicIdList={["1", "2", "3"]}
-                topics={["Flowers", "Natives", "Country"]}
+                themeId={themeId}
+                topicIdList={topicIdList}
+                topics={topics}
               />
             </div>
           </div>
@@ -686,3 +700,5 @@ export function ConsolePage() {
     </div>
   );
 }
+
+export default ConsolePage;
