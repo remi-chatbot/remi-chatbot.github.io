@@ -23,6 +23,7 @@ import { X, Edit, Zap, ArrowUp, ArrowDown } from 'react-feather';
 import { Button } from '../components/button/Button';
 import { Toggle } from '../components/toggle/Toggle';
 import { Map } from '../components/Map';
+import { TopicImageView } from '../components/TopicImageView';
 
 import './ConsolePage.scss';
 import { isJsxOpeningLikeElement } from 'typescript';
@@ -124,6 +125,7 @@ export function ConsolePage() {
     lng: -122.418137,
   });
   const [marker, setMarker] = useState<Coordinates | null>(null);
+  const [showEvents, setShowEvents] = useState(true);
 
   /**
    * Utility for formatting the timing of logs
@@ -454,20 +456,28 @@ export function ConsolePage() {
         return json;
       }
     );
+    client.addTool(
+      {
+        name: 'display_topic_images',
+        description: 'Display all three topic images on the screen',
+        parameters: {
+          type: 'object',
+          properties: {
+            theme_id: {
+              type: 'string',
+              description:
+                'the theme id',
+            },
+          },
+          required: ['key', 'value'],
+        },
+      },
+      async ({ theme_id }: { theme_id: string }) => {
+        // TODO display image based on the theme_id
+        console.log(`display image theme_id: ${theme_id}`);
+      }
+    );
 
-    // handle realtime events from client + server for event logging
-    client.on('realtime.event', (realtimeEvent: RealtimeEvent) => {
-      setRealtimeEvents((realtimeEvents) => {
-        const lastEvent = realtimeEvents[realtimeEvents.length - 1];
-        if (lastEvent?.event.type === realtimeEvent.event.type) {
-          // if we receive multiple events in a row, aggregate them for display purposes
-          lastEvent.count = (lastEvent.count || 0) + 1;
-          return realtimeEvents.slice(0, -1).concat(lastEvent);
-        } else {
-          return realtimeEvents.concat(realtimeEvent);
-        }
-      });
-    });
     client.on('error', (event: any) => console.error(event));
     client.on('conversation.interrupted', async () => {
       const trackSampleOffset = await wavStreamPlayer.interrupt();
@@ -524,6 +534,17 @@ export function ConsolePage() {
       </div>
       <div className="content-main">
         <div className="content-logs">
+          <div
+            className="flex h-screen flex-col"
+          >
+            <div className="topic-image-container border rounded-lg p-4 flex flex-col gap-2 w-200 m-3 h-auto" style={{ maxWidth: '100%', height: 'auto' }}>
+              <TopicImageView
+                themeId="001"
+                topicIdList={["1", "2", "3"]}
+                topics={["Flowers", "Natives", "Country"]}
+              />
+            </div>
+          </div>
           <div className="content-block events">
             <div className="visualization">
               <div className="visualization-entry client">
@@ -532,70 +553,6 @@ export function ConsolePage() {
               <div className="visualization-entry server">
                 <canvas ref={serverCanvasRef} />
               </div>
-            </div>
-            <div className="content-block-title">events</div>
-            <div className="content-block-body" ref={eventsScrollRef}>
-              {!realtimeEvents.length && `awaiting connection...`}
-              {realtimeEvents.map((realtimeEvent, i) => {
-                const count = realtimeEvent.count;
-                const event = { ...realtimeEvent.event };
-                if (event.type === 'input_audio_buffer.append') {
-                  event.audio = `[trimmed: ${event.audio.length} bytes]`;
-                } else if (event.type === 'response.audio.delta') {
-                  event.delta = `[trimmed: ${event.delta.length} bytes]`;
-                }
-                return (
-                  <div className="event" key={event.event_id}>
-                    <div className="event-timestamp">
-                      {formatTime(realtimeEvent.time)}
-                    </div>
-                    <div className="event-details">
-                      <div
-                        className="event-summary"
-                        onClick={() => {
-                          // toggle event details
-                          const id = event.event_id;
-                          const expanded = { ...expandedEvents };
-                          if (expanded[id]) {
-                            delete expanded[id];
-                          } else {
-                            expanded[id] = true;
-                          }
-                          setExpandedEvents(expanded);
-                        }}
-                      >
-                        <div
-                          className={`event-source ${
-                            event.type === 'error'
-                              ? 'error'
-                              : realtimeEvent.source
-                          }`}
-                        >
-                          {realtimeEvent.source === 'client' ? (
-                            <ArrowUp />
-                          ) : (
-                            <ArrowDown />
-                          )}
-                          <span>
-                            {event.type === 'error'
-                              ? 'error!'
-                              : realtimeEvent.source}
-                          </span>
-                        </div>
-                        <div className="event-type">
-                          {event.type}
-                          {count && ` (${count})`}
-                        </div>
-                      </div>
-                      {!!expandedEvents[event.event_id] && (
-                        <div className="event-payload">
-                          {JSON.stringify(event, null, 2)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           </div>
           <div className="content-block conversation">
