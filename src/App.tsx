@@ -14,16 +14,16 @@ const generateRandomInt = (min: number, max: number) => {
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);  // Track login status
   const [isLoading, setIsLoading] = useState(false);  // Track loading state
-  const isFetchingRef = useRef(false);  // Add this ref
+  const hasLoadedRef = useRef(false);  // Add this ref
 
   // Simulate authentication (this would normally come from an authentication service)
-  const fetchTheme = async (apiToken: string) => {
-    const _themeId = String(generateRandomInt(1, 95)).padStart(3, '0');
+  const loadClient = async (apiToken: string) => {
+    hasLoadedRef.current = true;
+    const _themeId = String(generateRandomInt(1, 95)).padStart(3, '0'); // random theme
     const theme = (await apiService.getTheme(apiToken, _themeId)).theme as Theme;
     localStorage.setItem('theme', JSON.stringify(theme));
     console.log(`## set theme id: ${_themeId}`);
     setIsLoading(false);
-    isFetchingRef.current = false;  // Reset the ref when done
   };
 
   useEffect(() => {
@@ -33,11 +33,11 @@ function App() {
     if (isAuthenticated !== currentAuthState) {
       setIsAuthenticated(currentAuthState);
 
-      if ((isAuthenticated !== currentAuthState) && currentAuthState && !isFetchingRef.current) {
-        isFetchingRef.current = true;
+      if ((isAuthenticated !== currentAuthState) && currentAuthState && !hasLoadedRef.current) {
+        // hasLoadedRef.current = true;
         setIsLoading(true);
         console.log('## loading....')
-        fetchTheme(localStorage.getItem('api_token') ?? "");
+        loadClient(localStorage.getItem('api_token') ?? "");
       }
     }
   }, []);
@@ -48,8 +48,9 @@ function App() {
     localStorage.setItem('oai_key', oai_key);
     localStorage.setItem('imgBaseUrl', img_base_url);
     localStorage.setItem('api_token', api_token);
-    setIsAuthenticated(true);
     // Theme will be fetched by useEffect after authentication state changes
+    await loadClient(api_token);
+    setIsAuthenticated(true);
   };
 
   const handleLogout = () => {
