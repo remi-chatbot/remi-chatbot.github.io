@@ -106,7 +106,10 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [canPushToTalk, setCanPushToTalk] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
-  const [memoryKv, setMemoryKv] = useState<{ [key: string]: any }>({});
+  const [memoryKv, setMemoryKv] = useState<{ [key: string]: any }>(() => {
+    const storedMemoryKv = localStorage.getItem('acnt::memoryKv');
+    return storedMemoryKv ? JSON.parse(storedMemoryKv) : {};
+  });
   const [coords, setCoords] = useState<Coordinates | null>({
     lat: 37.775593,
     lng: -122.418137,
@@ -117,6 +120,11 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
   const [themeId, setThemeId] = useState<string>("001");
   const [topicIdList, setTopicIdList] = useState<string[]>([]);
   const [topics, setTopics] = useState<string[]>([]);
+
+  // Save memoryKv to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('acnt::memoryKv', JSON.stringify(memoryKv));
+  }, [memoryKv]);
 
   /**
    * Utility for formatting the timing of logs
@@ -200,7 +208,7 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
     setIsConnected(false);
     setRealtimeEvents([]);
     setItems([]);
-    setMemoryKv({});
+    // setMemoryKv({});
     setCoords({
       lat: 37.775593,
       lng: -122.418137,
@@ -521,6 +529,7 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
       </div>
       <div className="content-main">
         <div className="content-logs">
+          <div className="content-block events">
           <div
             className="flex h-screen flex-col"
           >
@@ -530,15 +539,18 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
                 topicIdList={topicIdList}
                 topics={topics}
               />
+
             </div>
           </div>
-          <div className="content-block events">
-            <div className="visualization">
-              <div className="visualization-entry client">
-                <canvas ref={clientCanvasRef} />
-              </div>
-              <div className="visualization-entry server">
-                <canvas ref={serverCanvasRef} />
+
+            <div className="content-block events">
+              <div className="visualization">
+                <div className="visualization-entry client">
+                  <canvas ref={clientCanvasRef} />
+                </div>
+                <div className="visualization-entry server">
+                  <canvas ref={serverCanvasRef} />
+                </div>
               </div>
             </div>
           </div>

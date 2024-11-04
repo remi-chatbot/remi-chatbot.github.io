@@ -28,16 +28,17 @@ It should be available via `localhost:3000`.
 
 
 A-CONECT features
-+ [ ] Randomize theme
-  + [ ] Bug exists. The theme is not consistent between images and sys prompt. The main reason is that the sys is inited before the themeId is generated.
++ [x] Randomize theme
+  + [x] Bug exists. The theme is not consistent between images and sys prompt. The main reason is that the sys is inited before the themeId is generated.
+  + [ ] `## getInitialSystemPrompt Topics:  ` will be executed twice
 + [x] Propose topics based on theme
 + [ ] Select topics
 + [x] Display image
 + [ ] Deploy it to github.io
 + [ ] Simplified UI
 + [x] Login page. Authorization for the use and private image access.
-+ [WIP] Allow for public access w/ API
-  + [ ] The OAI APi is not set correctly
++ [X] Allow for public access w/ API
+  + [X] The OAI APi is not set correctly. 
 + [ ] Setting page. 
 + [ ] Memory. Not very stable. I used the function call.
 + [x] I-CONECT images with auth.
