@@ -32,14 +32,15 @@ A-CONECT features
   + [x] Bug exists. The theme is not consistent between images and sys prompt. The main reason is that the sys is inited before the themeId is generated.
   + [ ] `## getInitialSystemPrompt Topics:  ` will be executed twice. Probably not at deployment.
 + [x] Propose topics based on theme
-+ [ ] Select topics
 + [x] Display image
-+ [ ] Deploy it to github.io
-+ [ ] Simplified UI
 + [x] Login page. Authorization for the use and private image access.
 + [X] Allow for public access w/ API
   + [X] The OAI APi is not set correctly. 
-+ [ ] Setting page. 
 + [x] Memory which will be stored on demand by OpenAI.
 + [x] I-CONECT images with auth.
++ [ ] Select one topic
++ [ ] Setting page. 
++ [ ] Deploy it to github.io
++ [ ] Simplified UI
+  + [ ] Add avatar.
 + [ ] Mem:0 for more structured memory
