@@ -30,7 +30,7 @@ It should be available via `localhost:3000`.
 A-CONECT features
 + [x] Randomize theme
   + [x] Bug exists. The theme is not consistent between images and sys prompt. The main reason is that the sys is inited before the themeId is generated.
-  + [ ] `## getInitialSystemPrompt Topics:  ` will be executed twice
+  + [ ] `## getInitialSystemPrompt Topics:  ` will be executed twice. Probably not at deployment.
 + [x] Propose topics based on theme
 + [ ] Select topics
 + [x] Display image
@@ -40,7 +40,6 @@ A-CONECT features
 + [X] Allow for public access w/ API
   + [X] The OAI APi is not set correctly. 
 + [ ] Setting page. 
-+ [ ] Memory. Not very stable. I used the function call.
++ [x] Memory which will be stored on demand by OpenAI.
 + [x] I-CONECT images with auth.
 + [ ] Mem:0 for more structured memory
-+ [ ] Improve the stability of memory. Function call is not stable.

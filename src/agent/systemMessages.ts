@@ -13,6 +13,7 @@ export function getInitialSystemPrompt(prompt_opt: SysPromptOpt, user_memory: st
     const t = JSON.parse(localStorage.getItem('theme') ?? "")
     const topics = t['topics']
     console.log("## getInitialSystemPrompt Topics: ", topics);
+    console.log("## user_memory:", user_memory);
 
     switch (prompt_opt) {
         case SysPromptOpt.DEFAULT:
