@@ -5,7 +5,7 @@ const API_URL = "https://a-conect-auth.netlify.app/.netlify/functions";
 const apiService = {
     getTokens: async (token: string): Promise<any> => {
         try{
-            const response = await axios.get(`${API_URL}/vapi`, {
+            const response = await axios.get(`${API_URL}/oakey`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }

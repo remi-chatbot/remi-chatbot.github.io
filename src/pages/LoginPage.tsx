@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import apiService from '../lib/apiServer';
 
 interface LoginPageProps {
-    onLogin: (vapi_key: string, img_base_url: string, api_token: string) => void;
+    onLogin: (oai_key: string, img_base_url: string, api_token: string) => void;
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
@@ -15,11 +15,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         // Add your login logic here (validate credentials)
         const data = await apiService.getTokens(password);
         if (data != undefined) {
-            const vapi_key = data.api_key;
-            console.log(`get vapi_key: ${vapi_key}`);
-            onLogin(vapi_key, data.img_base_url, password);  // Trigger login and update the app state
+            const oai_key = data.api_key;
+            console.log(`get oai_key: ${oai_key}`);
+            onLogin(oai_key, data.img_base_url, password);  // Trigger login and update the app state
         } else {
             // Display an error notification using alert
+            console.log('ERROR: Invalid password. Please try again.');
             window.alert('Invalid password. Please try again.');
         }
     };

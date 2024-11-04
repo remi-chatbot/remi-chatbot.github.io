@@ -8,22 +8,23 @@ export enum SysPromptOpt {
     DEBUG = 'Debug',
 }
 
-export function getInitialSystemPrompt(themeId: string, prompt_opt: SysPromptOpt, user_memory: string | undefined, name: string | undefined): string {
+export function getInitialSystemPrompt(prompt_opt: SysPromptOpt, user_memory: string | undefined, name: string | undefined): string {
     console.log("user_memory: ", user_memory)
     const t = JSON.parse(localStorage.getItem('theme') ?? "")
     const topics = t['topics']
+    console.log("## getInitialSystemPrompt Topics: ", topics);
 
     switch (prompt_opt) {
         case SysPromptOpt.DEFAULT:
-            return systemPromptsV1.DEFAULT(name ?? "", user_memory ?? "", topics, themeId);
+            return systemPromptsV1.DEFAULT(name ?? "", user_memory ?? "", topics);
         case SysPromptOpt.TALKY:
-            return systemPromptsV1.TALKY(name ?? "", topics, themeId);
+            return systemPromptsV1.TALKY(name ?? "", topics);
         case SysPromptOpt.TALKY_NO_IMG:
             return systemPromptsV1.TALKY_NO_IMG(name ?? "", topics);
         case SysPromptOpt.DEMO_TALKY_NO_IMG:
             return systemPromptsV1.DEMO_TALKY_NO_IMG(name ?? "");
         case SysPromptOpt.DEBUG:
-            return systemPromptsV1.DEBUG(name ?? "", topics, themeId);
+            return systemPromptsV1.DEBUG(name ?? "", topics);
         default:
             console.log(`ERROR: no system prompt is found for ${prompt_opt}`);
             return "";

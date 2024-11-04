@@ -1,16 +1,3 @@
-/**
- * Running a local relay server will allow you to hide your API key
- * and run custom logic on the server
- *
- * Set the local relay server address to:
- * REACT_APP_LOCAL_RELAY_SERVER_URL=http://localhost:8081
- *
- * This will also require you to set OPENAI_API_KEY= in a `.env` file
- * You can run it with `npm run relay`, in parallel with `npm start`
- */
-const LOCAL_RELAY_SERVER_URL: string =
-  process.env.REACT_APP_LOCAL_RELAY_SERVER_URL || '';
-
 import { useEffect, useRef, useCallback, useState } from 'react';
 
 import { RealtimeClient } from '@openai/realtime-api-beta';
@@ -30,6 +17,9 @@ import { isJsxOpeningLikeElement } from 'typescript';
 
 import { Theme } from '../lib/themes';
 import apiService from '../lib/apiServer';
+
+import { getInitialSystemPrompt, SysPromptOpt } from '../agent/systemMessages';
+import { envConfig } from "../utils/env.config";
 
 /**
  * Type for result from get_weather() function call
@@ -64,23 +54,12 @@ const generateRandomInt = (min: number, max: number) => {
 
 interface ConsolePageProps {
   onLogout: () => void;
+  apiKey: string;
 }
 
 // export function ConsolePage() {
-const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout }) => {
-  /**
-   * Ask user for API Key
-   * If we're using the local relay server, we don't need this
-   */
-  const apiKey = LOCAL_RELAY_SERVER_URL
-    ? ''
-    : localStorage.getItem('tmp::voice_api_key') ||
-      prompt('OpenAI API Key') ||
-      '';
-  if (apiKey !== '') {
-    localStorage.setItem('tmp::voice_api_key', apiKey);
-  }
-
+const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
+  console.log(`## apiKey: ${apiKey}`)
   /**
    * Instantiate:
    * - WavRecorder (speech input)
@@ -94,11 +73,8 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout }) => {
     new WavStreamPlayer({ sampleRate: 24000 })
   );
   const clientRef = useRef<RealtimeClient>(
-    new RealtimeClient(
-      LOCAL_RELAY_SERVER_URL
-        ? { url: LOCAL_RELAY_SERVER_URL }
-        : {
-            apiKey: apiKey,
+    new RealtimeClient({
+            apiKey: apiKey,  // Ensure apiKey is always a string
             dangerouslyAllowAPIKeyInBrowser: true,
           }
     )
@@ -401,7 +377,7 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout }) => {
     const client = clientRef.current;
 
     // Set instructions
-    client.updateSession({ instructions: instructions });
+    client.updateSession({ instructions: getInitialSystemPrompt(SysPromptOpt.DEFAULT, JSON.stringify(memoryKv), "Mary") });
     // Set transcription, otherwise we don't get user transcriptions back
     client.updateSession({ input_audio_transcription: { model: 'whisper-1' } });
 
@@ -535,7 +511,6 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout }) => {
           <span>realtime console</span>
         </div>
         <div className="content-api-key">
-          {!LOCAL_RELAY_SERVER_URL && (
             <Button
               icon={LogOut}
               iconPosition="end"
@@ -543,7 +518,6 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout }) => {
               label={`Log Out`}  // {`api key: ${apiKey.slice(0, 3)}...`}
               onClick={() => onLogout()}
             />
-          )}
         </div>
       </div>
       <div className="content-main">
