@@ -154,7 +154,7 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
     const apiKey = prompt('OpenAI API Key');
     if (apiKey !== null) {
       localStorage.clear();
-      localStorage.setItem('tmp::voice_api_key', apiKey);
+      localStorage.setItem('acnt::voice_api_key', apiKey);
       window.location.reload();
     }
   }, []);
@@ -168,11 +168,8 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
     const wavRecorder = wavRecorderRef.current;
     const wavStreamPlayer = wavStreamPlayerRef.current;
 
-    // // Init theme
-    // const _themeId = String(generateRandomInt(1, 95)).padStart(3, '0');
-    // const theme = (await apiService.getTheme(localStorage.getItem('api_token') ?? "", _themeId)).theme as Theme
-    // localStorage.setItem('theme', JSON.stringify(theme));
-    setThemeId(JSON.parse(localStorage.getItem('theme') ?? "")['id']);
+    // Init theme
+    setThemeId(JSON.parse(localStorage.getItem('acnt::theme') ?? "")['id']);
 
     // Set state variables
     startTimeRef.current = new Date().toISOString();

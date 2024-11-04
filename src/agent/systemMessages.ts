@@ -10,7 +10,7 @@ export enum SysPromptOpt {
 
 export function getInitialSystemPrompt(prompt_opt: SysPromptOpt, user_memory: string | undefined, name: string | undefined): string {
     console.log("user_memory: ", user_memory)
-    const t = JSON.parse(localStorage.getItem('theme') ?? "")
+    const t = JSON.parse(localStorage.getItem('acnt::theme') ?? "")
     const topics = t['topics']
     console.log("## getInitialSystemPrompt Topics: ", topics);
     console.log("## user_memory:", user_memory);

@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react';
 import { envConfig } from "../utils/env.config";
 
 function TopicImageView({ themeId, topicIdList, topics }: {
@@ -5,6 +6,9 @@ function TopicImageView({ themeId, topicIdList, topics }: {
     topicIdList: string[];
     topics: string[];
 }) {
+    useEffect(() => {
+        console.log('Received topics: ', topics);
+    }, [topics]);
     return (
         <>
             {/* <h1 className="text-2xl text-center w-full">Theme {themeId}</h1> */}

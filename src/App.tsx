@@ -21,13 +21,13 @@ function App() {
     hasLoadedRef.current = true;
     const _themeId = String(generateRandomInt(1, 95)).padStart(3, '0'); // random theme
     const theme = (await apiService.getTheme(apiToken, _themeId)).theme as Theme;
-    localStorage.setItem('theme', JSON.stringify(theme));
+    localStorage.setItem('acnt::theme', JSON.stringify(theme));
     console.log(`## set theme id: ${_themeId}`);
     setIsLoading(false);
   };
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem('isAuthenticated');
+    const loggedIn = localStorage.getItem('acnt::isAuthenticated');
     const currentAuthState = loggedIn === 'true';
     
     if (isAuthenticated !== currentAuthState) {
@@ -37,28 +37,24 @@ function App() {
         // hasLoadedRef.current = true;
         setIsLoading(true);
         console.log('## loading....')
-        loadClient(localStorage.getItem('api_token') ?? "");
+        loadClient(localStorage.getItem('acnt::api_token') ?? "");
       }
     }
   }, []);
 
   const handleLogin = async (oai_key: string, img_base_url: string, api_token: string) => {
     // Store credentials
-    localStorage.setItem('isAuthenticated', 'true');
-    localStorage.setItem('oai_key', oai_key);
-    localStorage.setItem('imgBaseUrl', img_base_url);
-    localStorage.setItem('api_token', api_token);
+    localStorage.setItem('acnt::isAuthenticated', 'true');
+    localStorage.setItem('acnt::oai_key', oai_key);
+    localStorage.setItem('acnt::imgBaseUrl', img_base_url);
+    localStorage.setItem('acnt::api_token', api_token);
     // Theme will be fetched by useEffect after authentication state changes
     await loadClient(api_token);
     setIsAuthenticated(true);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('oai_key');
-    localStorage.removeItem('imgBaseUrl');
-    localStorage.removeItem('api_token');
-    localStorage.removeItem('theme');
+    localStorage.clear();
     setIsAuthenticated(false);
   };
 
@@ -83,7 +79,7 @@ function App() {
               <div data-component="App">
                 <ConsolePage 
                   onLogout={handleLogout} 
-                  apiKey={localStorage.getItem('oai_key') || (prompt('OpenAI API Key') || '')} 
+                  apiKey={localStorage.getItem('acnt::oai_key') || (prompt('OpenAI API Key') || '')} 
                 />
               </div>
             )

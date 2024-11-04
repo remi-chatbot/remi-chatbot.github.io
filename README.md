@@ -39,9 +39,16 @@ A-CONECT features
 + [x] Memory which will be stored on demand by OpenAI.
 + [x] I-CONECT images with auth.
 + [x] Select one topic
-+ [ ] Setting page. 
 + [ ] Enable to pause and resume the conversation instead of disconnecting.
 + [ ] Deploy it to github.io
 + [ ] Simplified UI
   + [ ] Add avatar.
+
+Advanced features:
 + [ ] Mem:0 for more structured memory
++ [ ] Setting page. 
+
+Issues:
++ [ ] The local storage has misleading keys.
++ [ ] Fix bugs found by Sam and Hiroko.
++ [ ] Encrypt keys.
