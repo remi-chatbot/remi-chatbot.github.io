@@ -59,7 +59,6 @@ interface ConsolePageProps {
 
 // export function ConsolePage() {
 const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
-  console.log(`## apiKey: ${apiKey}`)
   /**
    * Instantiate:
    * - WavRecorder (speech input)
@@ -161,11 +160,11 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
     const wavRecorder = wavRecorderRef.current;
     const wavStreamPlayer = wavStreamPlayerRef.current;
 
-    // Init theme
-    const _themeId = String(generateRandomInt(1, 95)).padStart(3, '0');
-    const theme = (await apiService.getTheme(localStorage.getItem('api_token') ?? "", _themeId)).theme as Theme
-    localStorage.setItem('theme', JSON.stringify(theme));
-    setThemeId(_themeId);
+    // // Init theme
+    // const _themeId = String(generateRandomInt(1, 95)).padStart(3, '0');
+    // const theme = (await apiService.getTheme(localStorage.getItem('api_token') ?? "", _themeId)).theme as Theme
+    // localStorage.setItem('theme', JSON.stringify(theme));
+    setThemeId(JSON.parse(localStorage.getItem('theme') ?? "")['id']);
 
     // Set state variables
     startTimeRef.current = new Date().toISOString();
