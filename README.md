@@ -45,9 +45,9 @@ A-CONECT features
 + [x] Select one topic
 + [x] Deploy it to github.io and check the latency.
 + [ ] Enable to pause and resume the conversation instead of disconnecting.
-+ [ ] Simplified UI
++ [x] Simplified UI
   + [x] Add avatar to replace the map.
-  + [ ] Simplify the buttons.
+  + [x] Simplify the buttons.
 
 Advanced features:
 + [ ] Mem:0 for more structured memory
