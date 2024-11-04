@@ -621,12 +621,12 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout }) => {
                               '(truncated)'}
                           </div>
                         )}
-                      {conversationItem.formatted.file && (
+                      {/* {conversationItem.formatted.file && (
                         <audio
                           src={conversationItem.formatted.file.url}
                           controls
                         />
-                      )}
+                      )} */}
                     </div>
                   </div>
                 );
