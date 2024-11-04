@@ -16,7 +16,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         const data = await apiService.getTokens(password);
         if (data != undefined) {
             const oai_key = data.api_key;
-            console.log(`get oai_key: ${oai_key}`);
+            console.log(`get oai_key: ${oai_key.slice(0, 6)}...`);
             onLogin(oai_key, data.img_base_url, password);  // Trigger login and update the app state
         } else {
             // Display an error notification using alert
