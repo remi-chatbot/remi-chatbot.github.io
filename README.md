@@ -48,6 +48,7 @@ A-CONECT features
 + [x] Simplified UI
   + [x] Add avatar to replace the map.
   + [x] Simplify the buttons.
++ [ ] Detailed memory.
 
 Advanced features:
 + [ ] Mem:0 for more structured memory

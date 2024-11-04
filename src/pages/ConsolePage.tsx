@@ -178,7 +178,7 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
     // Set state variables
     startTimeRef.current = new Date().toISOString();
     setIsConnected(true);
-    setRealtimeEvents([]);
+    // setRealtimeEvents([]);
     setItems(client.conversation.getItems());
 
     // Connect to microphone
@@ -209,8 +209,8 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
    */
   const disconnectConversation = useCallback(async () => {
     setIsConnected(false);
-    setRealtimeEvents([]);
-    setItems([]);
+    // setRealtimeEvents([]);
+    // setItems([]);
 
     const client = clientRef.current;
     client.disconnect();
@@ -493,7 +493,7 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
       <div className="content-top">
         <div className="content-title">
           <img src="/openai-logomark.svg" />
-          <span>A-CONECT (v11042024.1)</span>
+          <span>A-CONECT (v11042024.2)</span>
         </div>
         <div className="content-api-key">
           <a href="project" className="block mt-4 lg:inline-block lg:mt-0 text-black hover:bg-black hover:text-white px-2 py-1 rounded mr-4">
@@ -570,7 +570,7 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
                         <div className={`speaker-content`}>
                           {/* tool response */}
                           {conversationItem.type === 'function_call_output' && (
-                            <div>{conversationItem.formatted.output}</div>
+                            <div>{conversationItem.formatted.output || ''}</div>
                           )}
                           {/* tool call */}
                           {!!conversationItem.formatted.tool && (
@@ -618,6 +618,38 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
               </div>
             )}
           <div className="content-actions">
+            <Button
+              label="Download Log"
+              buttonStyle="regular"
+              onClick={() => {
+                const jsonlData = items.map(item => {
+                    let content = '';
+                    if (item.type === 'function_call_output') {
+                        content = item.formatted.output || '';
+                    } else if (item.formatted.tool) {
+                        content = `${item.formatted.tool.name}(${item.formatted.tool.arguments})` || '';
+                    } else {
+                        content = item.formatted.text || item.formatted.transcript || '';
+                    }
+                    
+                    return {
+                        // id: item.id,
+                        role: item.role || item.type,
+                        content: content,
+                        timestamp: new Date().toISOString()
+                    };
+                }).map(item => JSON.stringify(item)).join('\n');
+                const blob = new Blob([jsonlData], { type: 'application/jsonl' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `a-conect_log_${new Date().toISOString().replace(/:/g, '-')}.jsonl`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }}
+            />
             <Toggle
               defaultValue={true}
               labels={['manual', 'vad']}
