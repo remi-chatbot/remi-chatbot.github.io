@@ -55,10 +55,11 @@ const generateRandomInt = (min: number, max: number) => {
 interface ConsolePageProps {
   onLogout: () => void;
   apiKey: string;
+  theme: Theme;
 }
 
 // export function ConsolePage() {
-const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
+const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) => {
   /**
    * Instantiate:
    * - WavRecorder (speech input)
@@ -117,9 +118,10 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
   const [marker, setMarker] = useState<Coordinates | null>(null);
 
   // topic selection
-  const [themeId, setThemeId] = useState<string>("001");
+  // const [themeId, setThemeId] = useState<string>("001");
+  // topic IDs to display
   const [topicIdList, setTopicIdList] = useState<string[]>([]);
-  const [topics, setTopics] = useState<string[]>([]);
+  // const [topics, setTopics] = useState<string[]>([]);
 
   // Save memoryKv to localStorage whenever it changes
   useEffect(() => {
@@ -169,7 +171,7 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
     const wavStreamPlayer = wavStreamPlayerRef.current;
 
     // Init theme
-    setThemeId(JSON.parse(localStorage.getItem('acnt::theme') ?? "")['id']);
+    // setThemeId(JSON.parse(localStorage.getItem('acnt::theme') ?? "")['id']);
 
     // Set state variables
     startTimeRef.current = new Date().toISOString();
@@ -466,9 +468,9 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
         },
       },
       async () => {
-        console.log(`display image theme_id: ${themeId}`);
+        console.log(`display image theme_id: ${theme.id}`);
         setTopicIdList(['1', '2', '3'])
-        setTopics(JSON.parse(localStorage.getItem('theme') ?? "")['topics']);
+        // setTopics(JSON.parse(localStorage.getItem('theme') ?? "")['topics']);
       }
     );
     client.addTool(
@@ -562,9 +564,9 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
           >
             <div className="topic-image-container border rounded-lg p-4 flex flex-col gap-2 w-200 m-3 h-auto" style={{ maxWidth: '100%', height: 'auto' }}>
               <TopicImageView
-                themeId={themeId}
+                themeId={theme.id}
                 topicIdList={topicIdList}
-                topics={topics}
+                topics={theme.topics}
               />
 
             </div>

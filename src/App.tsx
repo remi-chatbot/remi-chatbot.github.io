@@ -79,7 +79,8 @@ function App() {
               <div data-component="App">
                 <ConsolePage 
                   onLogout={handleLogout} 
-                  apiKey={localStorage.getItem('acnt::oai_key') || (prompt('OpenAI API Key') || '')} 
+                  apiKey={localStorage.getItem('acnt::oai_key') || (prompt('OpenAI API Key') || '')}
+                  theme={JSON.parse(localStorage.getItem('acnt::theme') ?? "")} 
                 />
               </div>
             )
