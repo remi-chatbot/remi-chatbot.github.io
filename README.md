@@ -38,8 +38,9 @@ A-CONECT features
   + [X] The OAI APi is not set correctly. 
 + [x] Memory which will be stored on demand by OpenAI.
 + [x] I-CONECT images with auth.
-+ [ ] Select one topic
++ [x] Select one topic
 + [ ] Setting page. 
++ [ ] Enable to pause and resume the conversation instead of disconnecting.
 + [ ] Deploy it to github.io
 + [ ] Simplified UI
   + [ ] Add avatar.

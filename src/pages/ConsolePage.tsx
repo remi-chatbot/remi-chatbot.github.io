@@ -474,6 +474,26 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
         setTopics(JSON.parse(localStorage.getItem('theme') ?? "")['topics']);
       }
     );
+    client.addTool(
+      {
+        name: 'set_topic',
+        description: 'Specify a topic to talk',
+        parameters: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              enum: ['1', '2', '3'],
+              description: 'topic ID',
+            },
+          },
+          required: ['id'],
+        },
+      },
+      async ({ id }: { [key: string]: any }) => {
+        setTopicIdList([id]);
+      }
+    );
 
     client.on('error', (event: any) => console.error(event));
     client.on('conversation.interrupted', async () => {
