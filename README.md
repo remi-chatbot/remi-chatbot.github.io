@@ -1,4 +1,4 @@
-# OpenAI Realtime Console
+# A-CONECT Chatbot Based on OpenAI Realtime Console
 
 The OpenAI Realtime Console is intended as an inspector and interactive API reference
 for the OpenAI Realtime API. It comes packaged with two utility libraries,
@@ -7,7 +7,7 @@ that acts as a **Reference Client** (for browser and Node.js) and
 [`/src/lib/wavtools`](./src/lib/wavtools) which allows for simple audio
 management in the browser.
 
-<img src="/readme/realtime-console-demo.png" width="800" />
+<img src="/readme/a-conect-demo.png" width="800" />
 
 # Starting the console
 
