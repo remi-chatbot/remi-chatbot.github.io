@@ -46,13 +46,16 @@ A-CONECT features
 + [x] Deploy it to github.io and check the latency.
 + [ ] Enable to pause and resume the conversation instead of disconnecting.
 + [ ] Simplified UI
-  + [ ] Add avatar to replace the map. Try to use the dynamics from our first version.
+  + [x] Add avatar to replace the map.
+  + [ ] Simplify the buttons.
 
 Advanced features:
 + [ ] Mem:0 for more structured memory
 + [ ] Setting page. 
 + [ ] Allow to download conversation.
 + [ ] Provide different characters on the map view.
++ [ ] More details on the character customized by, e.g., the location + weather.
++ [ ] Dynamics to avatar
 
 Issues:
 + [x] The local storage has misleading keys. => unified with `acnt::` prefix.

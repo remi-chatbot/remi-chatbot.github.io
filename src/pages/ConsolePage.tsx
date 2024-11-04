@@ -111,17 +111,16 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
     const storedMemoryKv = localStorage.getItem('acnt::memoryKv');
     return storedMemoryKv ? JSON.parse(storedMemoryKv) : {};
   });
-  const [coords, setCoords] = useState<Coordinates | null>({
-    lat: 37.775593,
-    lng: -122.418137,
-  });
-  const [marker, setMarker] = useState<Coordinates | null>(null);
+  // const [coords, setCoords] = useState<Coordinates | null>({
+  //   lat: 37.775593,
+  //   lng: -122.418137,
+  // });
+  // const [marker, setMarker] = useState<Coordinates | null>(null);
 
-  // topic selection
-  // const [themeId, setThemeId] = useState<string>("001");
   // topic IDs to display
   const [topicIdList, setTopicIdList] = useState<string[]>([]);
-  // const [topics, setTopics] = useState<string[]>([]);
+
+  const botName = "Mary";
 
   // Save memoryKv to localStorage whenever it changes
   useEffect(() => {
@@ -207,12 +206,6 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
     setIsConnected(false);
     setRealtimeEvents([]);
     setItems([]);
-    // setMemoryKv({});
-    setCoords({
-      lat: 37.775593,
-      lng: -122.418137,
-    });
-    setMarker(null);
 
     const client = clientRef.current;
     client.disconnect();
@@ -383,7 +376,7 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
     const client = clientRef.current;
 
     // Set instructions
-    client.updateSession({ instructions: getInitialSystemPrompt(SysPromptOpt.DEFAULT, JSON.stringify(memoryKv), "Mary") });
+    client.updateSession({ instructions: getInitialSystemPrompt(SysPromptOpt.DEFAULT, JSON.stringify(memoryKv), botName) });
     // Set transcription, otherwise we don't get user transcriptions back
     client.updateSession({ input_audio_transcription: { model: 'whisper-1' } });
 
@@ -415,49 +408,6 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
           return newKv;
         });
         return { ok: true };
-      }
-    );
-    client.addTool(
-      {
-        name: 'get_weather',
-        description:
-          'Retrieves the weather for a given lat, lng coordinate pair. Specify a label for the location.',
-        parameters: {
-          type: 'object',
-          properties: {
-            lat: {
-              type: 'number',
-              description: 'Latitude',
-            },
-            lng: {
-              type: 'number',
-              description: 'Longitude',
-            },
-            location: {
-              type: 'string',
-              description: 'Name of the location',
-            },
-          },
-          required: ['lat', 'lng', 'location'],
-        },
-      },
-      async ({ lat, lng, location }: { [key: string]: any }) => {
-        setMarker({ lat, lng, location });
-        setCoords({ lat, lng, location });
-        const result = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,wind_speed_10m`
-        );
-        const json = await result.json();
-        const temperature = {
-          value: json.current.temperature_2m as number,
-          units: json.current_units.temperature_2m as string,
-        };
-        const wind_speed = {
-          value: json.current.wind_speed_10m as number,
-          units: json.current_units.wind_speed_10m as string,
-        };
-        setMarker({ lat, lng, location, temperature, wind_speed });
-        return json;
       }
     );
     client.addTool(
@@ -678,33 +628,16 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
         </div>
         <div className="content-right">
           <div className="content-block map">
-            <div className="content-block-title">get_weather()</div>
+            <div className="content-block-title">{botName}</div>
             <div className="content-block-title bottom">
-              {marker?.location || 'not yet retrieved'}
-              {!!marker?.temperature && (
-                <>
-                  <br />
-                  🌡️ {marker.temperature.value} {marker.temperature.units}
-                </>
-              )}
-              {!!marker?.wind_speed && (
-                <>
-                  {' '}
-                  🍃 {marker.wind_speed.value} {marker.wind_speed.units}
-                </>
-              )}
+              {'more details'}
             </div>
-            <div className="content-block-body full">
-              {coords && (
-                <Map
-                  center={[coords.lat, coords.lng]}
-                  location={coords.location}
-                />
-              )}
+            <div className="content-block-body full" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <img src="/avatar.png" alt="Avatar" className="avatar" style={{ borderRadius: '50%' }} />
             </div>
           </div>
           <div className="content-block kv">
-            <div className="content-block-title">set_memory()</div>
+            <div className="content-block-title">Mary's memory</div>
             <div className="content-block-body content-kv">
               {JSON.stringify(memoryKv, null, 2)}
             </div>
