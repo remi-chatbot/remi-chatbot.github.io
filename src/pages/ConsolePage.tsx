@@ -493,7 +493,7 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
       <div className="content-top">
         <div className="content-title">
           <img src="/openai-logomark.svg" />
-          <span>A-CONECT</span>
+          <span>A-CONECT (v11042024.1)</span>
         </div>
         <div className="content-api-key">
           <a href="project" className="block mt-4 lg:inline-block lg:mt-0 text-black hover:bg-black hover:text-white px-2 py-1 rounded mr-4">
