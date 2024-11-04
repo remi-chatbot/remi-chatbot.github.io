@@ -26,11 +26,15 @@ $ npm start
 
 It should be available via `localhost:3000`.
 
+Deploy to a-connect.github.io with:
+
+```shell
+$ npm run deploy
+```
+
 
 A-CONECT features
 + [x] Randomize theme
-  + [x] Bug exists. The theme is not consistent between images and sys prompt. The main reason is that the sys is inited before the themeId is generated.
-  + [ ] `## getInitialSystemPrompt Topics:  ` will be executed twice. Probably not at deployment.
 + [x] Propose topics based on theme
 + [x] Display image
 + [x] Login page. Authorization for the use and private image access.
@@ -39,7 +43,7 @@ A-CONECT features
 + [x] Memory which will be stored on demand by OpenAI.
 + [x] I-CONECT images with auth.
 + [x] Select one topic
-+ [ ] Deploy it to github.io and check the latency.
++ [x] Deploy it to github.io and check the latency.
 + [ ] Enable to pause and resume the conversation instead of disconnecting.
 + [ ] Simplified UI
   + [ ] Add avatar to replace the map. Try to use the dynamics from our first version.
@@ -52,5 +56,10 @@ Advanced features:
 
 Issues:
 + [x] The local storage has misleading keys. => unified with `acnt::` prefix.
++ [x] Theme setup
+  + [x] Bug exists. The theme is not consistent between images and sys prompt. The main reason is that the sys is inited before the themeId is generated.
+  + [x] `## getInitialSystemPrompt Topics:  ` will be executed twice. Not at deployment. (Ignore issue)
+  + [x] The bug remains at deployment. The theme is not set. You will see different topics on screen and the chatbot's description.
 + [ ] Fix bugs found by Sam and Hiroko.
 + [ ] Encrypt keys.
++ [ ] When open 'https://a-conect.github.io/chat' directly, there will be 404.
