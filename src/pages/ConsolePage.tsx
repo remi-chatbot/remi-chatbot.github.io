@@ -532,7 +532,17 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
       <div className="content-top">
         <div className="content-title">
           <img src="/openai-logomark.svg" />
-          <span>realtime console</span>
+          <span>A-CONECT</span>
+        </div>
+        <div className="content-api-key">
+          <a href="project" className="block mt-4 lg:inline-block lg:mt-0 text-black hover:bg-black hover:text-white px-2 py-1 rounded mr-4">
+            Research
+          </a>
+        </div>
+        <div className="content-api-key">
+          <a href="https://www.surveymonkey.com/r/VNKG3NS" className="block mt-4 lg:inline-block lg:mt-0 text-black hover:bg-black hover:text-white px-2 py-1 rounded mr-4">
+            Feedback
+          </a>
         </div>
         <div className="content-api-key">
             <Button

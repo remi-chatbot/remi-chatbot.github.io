@@ -42,13 +42,14 @@ A-CONECT features
 + [ ] Enable to pause and resume the conversation instead of disconnecting.
 + [ ] Deploy it to github.io
 + [ ] Simplified UI
-  + [ ] Add avatar.
+  + [ ] Add avatar to replace the map.
 
 Advanced features:
 + [ ] Mem:0 for more structured memory
 + [ ] Setting page. 
++ [ ] Allow to download conversation.
 
 Issues:
-+ [ ] The local storage has misleading keys.
++ [x] The local storage has misleading keys. => unified with `acnt::` prefix.
 + [ ] Fix bugs found by Sam and Hiroko.
 + [ ] Encrypt keys.
