@@ -122,6 +122,9 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
 
   const botName = "Mary";
 
+  // show conversation panel
+  const [showConversation, setShowConversation] = useState(false);
+
   // Save memoryKv to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('acnt::memoryKv', JSON.stringify(memoryKv));
@@ -197,6 +200,8 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
     if (client.getTurnDetectionType() === 'server_vad') {
       await wavRecorder.record((data) => client.appendInputAudio(data.mono));
     }
+
+    // changeTurnEndType('server_vad');
   }, []);
 
   /**
@@ -380,6 +385,10 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
     // Set transcription, otherwise we don't get user transcriptions back
     client.updateSession({ input_audio_transcription: { model: 'whisper-1' } });
 
+    // set initial turn change type
+    client.updateSession({turn_detection: { type: 'server_vad' }});
+    setCanPushToTalk(false);
+
     // Add tools
     client.addTool(
       {
@@ -533,73 +542,84 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
               </div>
             </div>
           </div>
-          <div className="content-block conversation">
-            <div className="content-block-title">conversation</div>
-            <div className="content-block-body" data-conversation-content>
-              {!items.length && `awaiting connection...`}
-              {items.map((conversationItem, i) => {
-                return (
-                  <div className="conversation-item" key={conversationItem.id}>
-                    <div className={`speaker ${conversationItem.role || ''}`}>
-                      <div>
-                        {(
-                          conversationItem.role || conversationItem.type
-                        ).replaceAll('_', ' ')}
-                      </div>
-                      <div
-                        className="close"
-                        onClick={() =>
-                          deleteConversationItem(conversationItem.id)
-                        }
-                      >
-                        <X />
-                      </div>
-                    </div>
-                    <div className={`speaker-content`}>
-                      {/* tool response */}
-                      {conversationItem.type === 'function_call_output' && (
-                        <div>{conversationItem.formatted.output}</div>
-                      )}
-                      {/* tool call */}
-                      {!!conversationItem.formatted.tool && (
-                        <div>
-                          {conversationItem.formatted.tool.name}(
-                          {conversationItem.formatted.tool.arguments})
-                        </div>
-                      )}
-                      {!conversationItem.formatted.tool &&
-                        conversationItem.role === 'user' && (
-                          <div>
-                            {conversationItem.formatted.transcript ||
-                              (conversationItem.formatted.audio?.length
-                                ? '(awaiting transcript)'
-                                : conversationItem.formatted.text ||
-                                  '(item sent)')}
-                          </div>
-                        )}
-                      {!conversationItem.formatted.tool &&
-                        conversationItem.role === 'assistant' && (
-                          <div>
-                            {conversationItem.formatted.transcript ||
-                              conversationItem.formatted.text ||
-                              '(truncated)'}
-                          </div>
-                        )}
-                      {/* {conversationItem.formatted.file && (
-                        <audio
-                          src={conversationItem.formatted.file.url}
-                          controls
-                        />
-                      )} */}
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="content-block-title" onClick={() => setShowConversation(!showConversation)} style={{cursor: 'pointer'}}>
+              conversation log {showConversation ? '▼' : '▶'}
             </div>
-          </div>
+            {showConversation && (
+              <div className="content-block conversation">
+                <div className="content-block-body" data-conversation-content>
+                  {!items.length && `awaiting connection...`}
+                  {items.map((conversationItem, i) => {
+                    return (
+                      <div className="conversation-item" key={conversationItem.id}>
+                        <div className={`speaker ${conversationItem.role || ''}`}>
+                          <div>
+                            {(
+                              conversationItem.role || conversationItem.type
+                            ).replaceAll('_', ' ')}
+                          </div>
+                          <div
+                            className="close"
+                            onClick={() =>
+                              deleteConversationItem(conversationItem.id)
+                            }
+                          >
+                            <X />
+                          </div>
+                        </div>
+                        <div className={`speaker-content`}>
+                          {/* tool response */}
+                          {conversationItem.type === 'function_call_output' && (
+                            <div>{conversationItem.formatted.output}</div>
+                          )}
+                          {/* tool call */}
+                          {!!conversationItem.formatted.tool && (
+                            <div>
+                              {conversationItem.formatted.tool.name}(
+                              {conversationItem.formatted.tool.arguments})
+                            </div>
+                          )}
+                          {!conversationItem.formatted.tool &&
+                            conversationItem.role === 'user' && (
+                              <div>
+                                {conversationItem.formatted.transcript ||
+                                  (conversationItem.formatted.audio?.length
+                                    ? '(awaiting transcript)'
+                                    : conversationItem.formatted.text ||
+                                      '(item sent)')}
+                              </div>
+                            )}
+                          {!conversationItem.formatted.tool &&
+                            conversationItem.role === 'assistant' && (
+                              <div>
+                                {conversationItem.formatted.transcript ||
+                                  conversationItem.formatted.text ||
+                                  '(truncated)'}
+                              </div>
+                            )}
+                          {/* {conversationItem.formatted.file && (
+                            <audio
+                              src={conversationItem.formatted.file.url}
+                              controls
+                            />
+                          )} */}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="content-block kv">
+                  <div className="content-block-title">{botName}'s memory</div>
+                  <div className="content-block-body content-kv">
+                    {JSON.stringify(memoryKv, null, 2)}
+                  </div>
+                </div>
+              </div>
+            )}
           <div className="content-actions">
             <Toggle
-              defaultValue={false}
+              defaultValue={true}
               labels={['manual', 'vad']}
               values={['none', 'server_vad']}
               onChange={(_, value) => changeTurnEndType(value)}
@@ -615,7 +635,7 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
               />
             )}
             <div className="spacer" />
-            <Button
+            {/* <Button
               label={isConnected ? 'disconnect' : 'connect'}
               iconPosition={isConnected ? 'end' : 'start'}
               icon={isConnected ? X : Zap}
@@ -623,23 +643,25 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
               onClick={
                 isConnected ? disconnectConversation : connectConversation
               }
-            />
+            /> */}
           </div>
         </div>
         <div className="content-right">
           <div className="content-block map">
             <div className="content-block-title">{botName}</div>
             <div className="content-block-title bottom">
-              {'more details'}
+              <Button
+                label={isConnected ? 'disconnect' : 'connect'}
+                iconPosition={isConnected ? 'end' : 'start'}
+                icon={isConnected ? X : Zap}
+                buttonStyle={isConnected ? 'regular' : 'action'}
+                onClick={
+                  isConnected ? disconnectConversation : connectConversation
+                }
+              />
             </div>
             <div className="content-block-body full" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <img src="/avatar.png" alt="Avatar" className="avatar" style={{ borderRadius: '50%' }} />
-            </div>
-          </div>
-          <div className="content-block kv">
-            <div className="content-block-title">Mary's memory</div>
-            <div className="content-block-body content-kv">
-              {JSON.stringify(memoryKv, null, 2)}
             </div>
           </div>
         </div>
