@@ -4,7 +4,6 @@ import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'r
 import ConsolePage from './pages/ConsolePage';  // Assuming you have a homepage
 import LoginPage from './pages/LoginPage';
 import './App.scss';
-import { Theme } from './lib/themes';
 import apiService from './lib/apiServer';
 
 const generateRandomInt = (min: number, max: number) => {
@@ -19,10 +18,6 @@ function App() {
   // Simulate authentication (this would normally come from an authentication service)
   const loadClient = async (apiToken: string) => {
     hasLoadedRef.current = true;
-    const _themeId = String(generateRandomInt(1, 95)).padStart(3, '0'); // random theme
-    const theme = (await apiService.getTheme(apiToken, _themeId)).theme as Theme;
-    localStorage.setItem('acnt::theme', JSON.stringify(theme));
-    console.log(`## set theme id: ${_themeId}`);
     setIsLoading(false);
   };
 
@@ -74,13 +69,12 @@ function App() {
             !isAuthenticated ? (
               <Navigate to="/login" />
             ) : isLoading ? (
-              <div className="loading-page">Loading theme...</div>
+              <div className="loading-page">Loading...</div>
             ) : (
               <div data-component="App">
                 <ConsolePage 
                   onLogout={handleLogout} 
                   apiKey={localStorage.getItem('acnt::oai_key') || (prompt('OpenAI API Key') || '')}
-                  theme={JSON.parse(localStorage.getItem('acnt::theme') ?? "")} 
                 />
               </div>
             )

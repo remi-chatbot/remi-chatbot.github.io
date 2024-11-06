@@ -15,7 +15,6 @@ import { TopicImageView } from '../components/TopicImageView';
 import './ConsolePage.scss';
 import { isJsxOpeningLikeElement } from 'typescript';
 
-import { Theme } from '../lib/themes';
 import apiService from '../lib/apiServer';
 
 import { getInitialSystemPrompt, SysPromptOpt } from '../agent/systemMessages';
@@ -55,11 +54,10 @@ const generateRandomInt = (min: number, max: number) => {
 interface ConsolePageProps {
   onLogout: () => void;
   apiKey: string;
-  theme: Theme;
 }
 
 // export function ConsolePage() {
-const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) => {
+const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
   /**
    * Instantiate:
    * - WavRecorder (speech input)
@@ -427,9 +425,7 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
         },
       },
       async () => {
-        console.log(`display image theme_id: ${theme.id}`);
         setTopicIdList(['1', '2', '3'])
-        // setTopics(JSON.parse(localStorage.getItem('theme') ?? "")['topics']);
       }
     );
     client.addTool(
@@ -523,9 +519,9 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey, theme }) =>
           >
             <div className="topic-image-container border rounded-lg p-4 flex flex-col gap-2 w-200 m-3 h-auto" style={{ maxWidth: '100%', height: 'auto' }}>
               <TopicImageView
-                themeId={theme.id}
                 topicIdList={topicIdList}
-                topics={theme.topics}
+                topics={['Topic 1', 'Topic 2', 'Topic 3']}
+                themeId="default"
               />
 
             </div>
