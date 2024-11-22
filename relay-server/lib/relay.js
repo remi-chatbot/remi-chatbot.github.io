@@ -34,6 +34,18 @@ export class RealtimeRelay {
     this.log(`Connecting with key "${this.apiKey.slice(0, 3)}..."`);
     const client = new RealtimeClient({ apiKey: this.apiKey });
 
+    // Connect to OpenAI Realtime API first
+    try {
+      this.log(`Connecting to OpenAI...`);
+      await client.connect();
+      // Set voice after connection is established
+      await client.updateSession({ voice: 'shimmer' });
+    } catch (e) {
+      this.log(`Error connecting to OpenAI: ${e.message}`);
+      ws.close();
+      return;
+    }
+
     // Relay: OpenAI Realtime API Event -> Browser Event
     client.realtime.on('server.*', (event) => {
       this.log(`Relaying "${event.type}" to Client`);
@@ -63,16 +75,6 @@ export class RealtimeRelay {
     });
     ws.on('close', () => client.disconnect());
 
-    // Connect to OpenAI Realtime API
-    try {
-      this.log(`Connecting to OpenAI...`);
-      await client.connect();
-    } catch (e) {
-      this.log(`Error connecting to OpenAI: ${e.message}`);
-      ws.close();
-      return;
-    }
-    this.log(`Connected to OpenAI successfully!`);
     while (messageQueue.length) {
       messageHandler(messageQueue.shift());
     }

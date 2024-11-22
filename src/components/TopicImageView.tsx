@@ -1,34 +1,36 @@
 import React, { useEffect } from 'react';
 import { envConfig } from "../utils/env.config";
 
-function TopicImageView({ themeId, topicIdList, topics }: {
+interface TopicImageViewProps {
     themeId: string;
     topicIdList: string[];
     topics: string[];
-}) {
+    showEmotionWheel?: boolean;
+    isConnected?: boolean;
+}
+
+function TopicImageView({ themeId, topicIdList, topics, showEmotionWheel, isConnected }: TopicImageViewProps) {
     useEffect(() => {
         console.log('Received topics: ', topics);
     }, [topics]);
     return (
-        <>
-            {/* <h1 className="text-2xl text-center w-full">Theme {themeId}</h1> */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-3 gap-4">
-                {topicIdList.map((topic, index) => (
-                    <div key={index} className="text-center">
-                        <figure className="figure-container">
-                            <img
-                                src={`${envConfig.theme_img.base_url}/${themeId}/${topic}.jpg`}
-                                alt={`Topic ${index + 1}`}
-                                className="w-full h-auto"
-                            />
-                            <figcaption className="font-bold capitalize">
-                                {topics[parseInt(topic) - 1]}
-                            </figcaption>
-                        </figure>
-                    </div>
-                ))}
-            </div>
-        </>
+        <div className="flex flex-col items-center gap-4">
+            {showEmotionWheel && isConnected && (
+                <div className="mb-4 max-w-full">
+                    <img 
+                        src="https://www.davidhodder.com/wp-content/uploads/2018/10/Emotion-Feeling-Wheel-1-1.jpg"
+                        alt="Emotion Wheel"
+                        className="rounded-lg shadow-md"
+                        style={{ 
+                            maxWidth: '400px',
+                            width: '100%',
+                            height: 'auto',
+                            margin: '0 auto'
+                        }}
+                    />
+                </div>
+            )}
+        </div>
     );
 }
 
