@@ -6,7 +6,7 @@ import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { instructions } from '../utils/conversation_config.js';
 import { WavRenderer } from '../utils/wav_renderer';
 
-import { X, LogOut, Zap, ArrowUp, ArrowDown, FileText, Download, Send, ChevronUp, ChevronDown } from 'react-feather';
+import { X, LogOut, Zap, ArrowUp, ArrowDown } from 'react-feather';
 import { Button } from '../components/button/Button';
 import { Toggle } from '../components/toggle/Toggle';
 import { Map } from '../components/Map';
@@ -19,8 +19,6 @@ import apiService from '../lib/apiServer';
 
 import { getInitialSystemPrompt, SysPromptOpt } from '../agent/systemMessages';
 import { envConfig } from "../utils/env.config";
-import { SummaryModal } from '../components/SummaryModal/index';
-import ImageUpload from '../components/ImageUpload';
 
 /**
  * Type for result from get_weather() function call
@@ -105,10 +103,8 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
     [key: string]: boolean;
   }>({});
   const [isConnected, setIsConnected] = useState(false);
+  const [canPushToTalk, setCanPushToTalk] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [canPushToTalk, setCanPushToTalk] = useState(false);
-  const [voiceMode, setVoiceMode] = useState<'none' | 'server_vad'>('server_vad');
   const [memoryKv, setMemoryKv] = useState<{ [key: string]: any }>(() => {
     const storedMemoryKv = localStorage.getItem('acnt::memoryKv');
     return storedMemoryKv ? JSON.parse(storedMemoryKv) : {};
@@ -122,15 +118,10 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
   // topic IDs to display
   const [topicIdList, setTopicIdList] = useState<string[]>([]);
 
-  const botName = "Remi";
+  const botName = "Mary";
 
   // show conversation panel
   const [showConversation, setShowConversation] = useState(false);
-
-  const [summaryModalOpen, setSummaryModalOpen] = useState(false);
-  const [summaryContent, setSummaryContent] = useState('');
-
-  const [isTopicVisible, setIsTopicVisible] = useState(true);
 
   // Save memoryKv to localStorage whenever it changes
   useEffect(() => {
@@ -175,38 +166,41 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
    * WavRecorder taks speech input, WavStreamPlayer output, client is API client
    */
   const connectConversation = useCallback(async () => {
-    try {
-      const client = clientRef.current;
-      const wavRecorder = wavRecorderRef.current;
-      const wavStreamPlayer = wavStreamPlayerRef.current;
+    const client = clientRef.current;
+    const wavRecorder = wavRecorderRef.current;
+    const wavStreamPlayer = wavStreamPlayerRef.current;
 
-      await client.connect();
-      
-      startTimeRef.current = new Date().toISOString();
-      setIsConnected(true);
+    // Init theme
+    // setThemeId(JSON.parse(localStorage.getItem('acnt::theme') ?? "")['id']);
 
-      await wavRecorder.begin();
-      await wavStreamPlayer.connect();
+    // Set state variables
+    startTimeRef.current = new Date().toISOString();
+    setIsConnected(true);
+    // setRealtimeEvents([]);
+    setItems(client.conversation.getItems());
 
-      await client.updateSession({
-        instructions: getInitialSystemPrompt(SysPromptOpt.DEFAULT, JSON.stringify(memoryKv), botName),
-        input_audio_transcription: { model: 'whisper-1' },
-        turn_detection: { type: 'server_vad' }
-      });
+    // Connect to microphone
+    await wavRecorder.begin();
 
-      if (voiceMode === 'server_vad') {
-        await wavRecorder.record((data) => client.appendInputAudio(data.mono));
-      }
+    // Connect to audio output
+    await wavStreamPlayer.connect();
 
-      setCanPushToTalk(true);
-      setItems(client.conversation.getItems());
+    // Connect to realtime API
+    await client.connect();
+    client.sendUserMessageContent([
+      {
+        type: `input_text`,
+        text: `Hello!`,
+        // text: `For testing purposes, I want you to list ten car brands. Number each item, e.g. "one (or whatever number you are one): the item name".`
+      },
+    ]);
 
-    } catch (error) {
-      console.error('Connection failed:', error);
-      setIsConnected(false);
-      throw error;
+    if (client.getTurnDetectionType() === 'server_vad') {
+      await wavRecorder.record((data) => client.appendInputAudio(data.mono));
     }
-  }, [voiceMode]);
+
+    // changeTurnEndType('server_vad');
+  }, []);
 
   /**
    * Disconnect and reset conversation state
@@ -236,77 +230,45 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
    * .appendInputAudio() for each sample
    */
   const startRecording = async () => {
-    try {
-      setIsRecording(true);
-      const client = clientRef.current;
-      const wavRecorder = wavRecorderRef.current;
-      const wavStreamPlayer = wavStreamPlayerRef.current;
-      
-      // Interrupt any ongoing playback
-      const trackSampleOffset = await wavStreamPlayer.interrupt();
-      if (trackSampleOffset?.trackId) {
-        const { trackId, offset } = trackSampleOffset;
-        await client.cancelResponse(trackId, offset);
-      }
-
-      // Start recording
-      await wavRecorder.record((data) => {
-        if (client.isConnected()) {
-          client.appendInputAudio(data.mono);
-        }
-      });
-    } catch (error) {
-      console.error('Failed to start recording:', error);
-      setIsRecording(false);
+    setIsRecording(true);
+    const client = clientRef.current;
+    const wavRecorder = wavRecorderRef.current;
+    const wavStreamPlayer = wavStreamPlayerRef.current;
+    const trackSampleOffset = await wavStreamPlayer.interrupt();
+    if (trackSampleOffset?.trackId) {
+      const { trackId, offset } = trackSampleOffset;
+      await client.cancelResponse(trackId, offset);
     }
+    await wavRecorder.record((data) => client.appendInputAudio(data.mono));
   };
 
   /**
    * In push-to-talk mode, stop recording
    */
   const stopRecording = async () => {
-    try {
-      const client = clientRef.current;
-      const wavRecorder = wavRecorderRef.current;
-      
-      await wavRecorder.pause();
-      setIsRecording(false);
-      
-      if (client.isConnected()) {
-        await client.createResponse();
-      }
-    } catch (error) {
-      console.error('Failed to stop recording:', error);
-    }
+    setIsRecording(false);
+    const client = clientRef.current;
+    const wavRecorder = wavRecorderRef.current;
+    await wavRecorder.pause();
+    client.createResponse();
   };
 
   /**
    * Switch between Manual <> VAD mode for communication
    */
   const changeTurnEndType = async (value: string) => {
-    try {
-      const client = clientRef.current;
-      const wavRecorder = wavRecorderRef.current;
-      
-      // Stop any ongoing recording
-      if (wavRecorder.getStatus() === 'recording') {
-        await wavRecorder.pause();
-      }
-      
-      // Update session settings
-      await client.updateSession({
-        turn_detection: value === 'none' ? null : { type: 'server_vad' },
-      });
-      
-      // Start recording if switching to VAD mode
-      if (value === 'server_vad' && client.isConnected()) {
-        await wavRecorder.record((data) => client.appendInputAudio(data.mono));
-      }
-      
-      setVoiceMode(value as 'none' | 'server_vad');
-    } catch (error) {
-      console.error('Failed to change turn end type:', error);
+    const client = clientRef.current;
+    const wavRecorder = wavRecorderRef.current;
+    if (value === 'none' && wavRecorder.getStatus() === 'recording') {
+      await wavRecorder.pause();
     }
+    client.updateSession({
+      turn_detection: value === 'none' ? null : { type: 'server_vad' },
+    });
+    if (value === 'server_vad' && client.isConnected()) {
+      await wavRecorder.record((data) => client.appendInputAudio(data.mono));
+    }
+    setCanPushToTalk(value === 'none');
   };
 
   /**
@@ -519,715 +481,219 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
     };
   }, []);
 
-  const generateSummary = async () => {
-    try {
-      const conversationData = items.map(item => {
-        let content = '';
-        if (item.type === 'function_call_output') {
-          content = item.formatted.output || '';
-        } else if (item.formatted.tool) {
-          content = `${item.formatted.tool.name}(${item.formatted.tool.arguments})`;
-        } else {
-          content = item.formatted.text || item.formatted.transcript || '';
-        }
-        
-        return {
-          role: item.role || item.type,
-          content: content
-        };
-      });
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: "gpt-4-turbo-preview",
-          messages: [
-            {
-              role: "system",
-              content: "You are a helpful assistant that generates concise summaries of conversations. Focus on the main points and key decisions or outcomes."
-            },
-            {
-              role: "user",
-              content: `Please summarize this conversation: ${JSON.stringify(conversationData)}`
-            }
-          ],
-          max_tokens: 500
-        })
-      });
-
-      const data = await response.json();
-      setSummaryContent(data.choices[0].message.content);
-      setSummaryModalOpen(true);
-    } catch (error) {
-      console.error('Error generating summary:', error);
-      alert('Failed to generate summary. Please try again.');
-    }
-  };
-
-  // Add this function for downloading logs
-  const downloadLogs = () => {
-    try {
-      const conversationData = items.map(item => {
-        let content = '';
-        if (item.type === 'function_call_output') {
-          content = item.formatted.output || '';
-        } else if (item.formatted.tool) {
-          content = `${item.formatted.tool.name}(${item.formatted.tool.arguments})`;
-        } else {
-          content = item.formatted.text || item.formatted.transcript || '';
-        }
-        
-        return {
-          role: item.role || item.type,
-          content: content,
-          timestamp: new Date().toISOString()
-        };
-      });
-
-      const blob = new Blob([JSON.stringify(conversationData, null, 2)], { type: 'application/json' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `conversation-log-${new Date().toISOString()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error('Error downloading logs:', error);
-      alert('Failed to download logs. Please try again.');
-    }
-  };
-
-  const styles = `
-  .modern-layout {
-    background: #1a1a1a;
-    min-height: 100vh;
-    color: #ffffff;
-  }
-
-  .main-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 2rem;
-    display: grid;
-    grid-template-columns: 1fr 300px;
-    gap: 2rem;
-  }
-
-  .chat-section {
-    background: #2d2d2d;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    display: flex;
-    flex-direction: column;
-    height: calc(100vh - 100px);
-  }
-
-  .topic-section {
-    padding: 1.5rem;
-    background: #363636;
-    border-radius: 16px 16px 0 0;
-  }
-
-  .messages-section {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1.5rem;
-    scroll-behavior: smooth;
-    height: calc(100vh - 400px);
-    background: #2d2d2d;
-  }
-
-  .messages-section::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .messages-section::-webkit-scrollbar-track {
-    background: #363636;
-    border-radius: 4px;
-  }
-
-  .messages-section::-webkit-scrollbar-thumb {
-    background: #4a4a4a;
-    border-radius: 4px;
-  }
-
-  .message {
-    margin-bottom: 1rem;
-    padding: 1rem;
-    border-radius: 12px;
-    max-width: 85%;
-    word-wrap: break-word;
-  }
-
-  .message-user {
-    background: #0099ff;
-    margin-left: auto;
-    color: white;
-  }
-
-  .message-assistant {
-    background: #363636;
-    margin-right: auto;
-    color: white;
-  }
-
-  .message-image {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    margin-top: 0.5rem;
-    max-height: 300px; /* Limit maximum height */
-    object-fit: contain;
-  }
-
-  .audio-indicator {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-    font-size: 0.9rem;
-    color: #a0a0a0;
-  }
-
-  .tool-message {
-    font-size: 0.9rem;
-    color: #a0a0a0;
-    margin-top: 0.5rem;
-  }
-
-  .input-section {
-    padding: 1.5rem;
-    background: #363636;
-    border-radius: 0 0 16px 16px;
-  }
-
-  .input-container {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-end;
-  }
-
-  .input-wrapper {
-    flex: 1;
-    background: #2d2d2d;
-    border-radius: 12px;
-    padding: 0.75rem;
-    display: flex;
-    align-items: flex-end;
-    gap: 0.75rem;
-    border: 1px solid #4a4a4a;
-  }
-
-  .chat-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: #ffffff;
-    font-size: 1rem;
-    resize: none;
-    min-height: 24px;
-    max-height: 120px;
-    padding: 0;
-    line-height: 1.5;
-  }
-
-  .chat-input:focus {
-    outline: none;
-  }
-
-  .chat-input::placeholder {
-    color: #808080;
-  }
-
-  .action-buttons {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 1rem;
-  }
-
-  .controls-section {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid #4a4a4a;
-  }
-
-  .avatar-section {
-    background: #2d2d2d;
-    border-radius: 16px;
-    padding: 1.5rem;
-    text-align: center;
-    position: relative;
-  }
-
-  .avatar-container {
-    position: relative;
-    width: 200px;
-    height: 200px;
-    margin: 2rem auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .avatar-image {
-    width: 120px;
-    height: 120px;
-    border-radius: 60px;
-    border: 3px solid #0099ff;
-    position: relative;
-    z-index: 2;
-  }
-
-  .wave-canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-  }
-
-  .speaking-indicator {
-    position: absolute;
-    bottom: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #0099ff;
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 12px;
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-
-  .speaking-indicator.active {
-    opacity: 1;
-  }
-
-  .message-image.loading {
-    animation: pulse 1.5s infinite;
-  }
-
-  @keyframes pulse {
-    0% { opacity: 0.6; }
-    50% { opacity: 1; }
-    100% { opacity: 0.6; }
-  }
-  `;
-
-  // Add these additional styles
-  const additionalStyles = `
-  .top-controls {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    padding: 0.5rem 1.5rem;
-    background: #363636;
-    border-bottom: 1px solid #4a4a4a;
-  }
-
-  .bottom-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid #4a4a4a;
-  }
-
-  .control-group {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-  }
-
-  .vad-indicator {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: #363636;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    color: #0099ff;
-  }
-
-  .vad-indicator::before {
-    content: '';
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #0099ff;
-    animation: pulse 1.5s infinite;
-  }
-
-  @keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.4; }
-    100% { opacity: 1; }
-  }
-  `;
-
-  // Update the speaking state when audio starts/stops
-  useEffect(() => {
-    const wavStreamPlayer = wavStreamPlayerRef.current;
-    
-    const checkSpeaking = () => {
-      setIsSpeaking(!!wavStreamPlayer.analyser);
-    };
-
-    const interval = setInterval(checkSpeaking, 100);
-    return () => clearInterval(interval);
-  }, []);
-
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
-    }
-  }, [items]);
-
-  // Add this check before sending messages
-  const sendMessage = async (text: string) => {
-    if (!isConnected) {
-      try {
-        await connectConversation();
-      } catch (error) {
-        console.error('Failed to connect:', error);
-        alert('Failed to connect. Please try again.');
-        return;
-      }
-    }
-
-    try {
-      setShowConversation(true); // Ensure conversation is visible
-      await clientRef.current.sendUserMessageContent([
-        { type: 'input_text', text }
-      ]);
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      alert('Failed to send message. Please try again.');
-    }
-  };
-
-  // Add this effect to handle conversation visibility
-  useEffect(() => {
-    if (items.length > 0) {
-      setShowConversation(true);
-    }
-  }, [items]);
-
-  // Add this with your other refs
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Add this effect to handle microphone permissions
-  useEffect(() => {
-    const requestMicrophonePermission = async () => {
-      try {
-        await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch (error) {
-        console.error('Microphone permission denied:', error);
-        alert('Please enable microphone access to use voice features.');
-      }
-    };
-
-    requestMicrophonePermission();
-  }, []);
-
-  // Add this state for storing pending image
-  const [pendingImage, setPendingImage] = useState<string | null>(null);
-
-  // Add this state near your other state declarations
-  const [isMessageProcessing, setIsMessageProcessing] = useState(false);
-
-  // Add this console log to verify the message structure
-  const sendImageMessage = async (imageDataUrl: string, text: string = '') => {
-    try {
-      if (!isConnected) {
-        await connectConversation();
-      }
-
-      const messageContent = {
-        type: 'image_message',
-        image: imageDataUrl,
-        text: text || '[Image uploaded]'
-      };
-
-      console.log('Sending image message:', messageContent); // Debug log
-
-      await clientRef.current.sendUserMessageContent([
-        { 
-          type: 'input_text',
-          text: JSON.stringify(messageContent)
-        }
-      ]);
-
-      // Clear states after successful send
-      setPendingImage(null);
-      setIsMessageProcessing(false);
-    } catch (error) {
-      console.error('Failed to send image:', error);
-      throw error;
-    }
-  };
-
   /**
    * Render the application
    */
   return (
-    <div className="modern-layout">
-      <style>{styles}</style>
-      <style>{additionalStyles}</style>
-      
-      {/* Header */}
-      <header className="p-4 bg-[#2d2d2d]">
-        <div className="max-w-[1400px] mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <img src="/openai-logomark.svg" alt="Logo" className="h-8" />
-            <h1 className="text-xl font-semibold">Remi</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <a href="project" className="text-white hover:text-blue-400">Research</a>
-            <a href="https://www.surveymonkey.com/r/VNKG3NS" className="text-white hover:text-blue-400">Feedback</a>
-            <Button icon={LogOut} buttonStyle="action" label="Log Out" onClick={onLogout} />
-          </div>
+    <div data-component="ConsolePage">
+      <div className="content-top">
+        <div className="content-title">
+          <img src="/openai-logomark.svg" />
+          <span>A-CONECT (v11042024.2)</span>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="main-container">
-        <div className="chat-section">
-          {/* Top Controls */}
-          <div className="top-controls">
+        <div className="content-api-key">
+          <a href="project" className="block mt-4 lg:inline-block lg:mt-0 text-black hover:bg-black hover:text-white px-2 py-1 rounded mr-4">
+            Research
+          </a>
+        </div>
+        <div className="content-api-key">
+          <a href="https://www.surveymonkey.com/r/VNKG3NS" className="block mt-4 lg:inline-block lg:mt-0 text-black hover:bg-black hover:text-white px-2 py-1 rounded mr-4">
+            Feedback
+          </a>
+        </div>
+        <div className="content-api-key">
             <Button
-              label="Generate Summary"
-              buttonStyle="action"
-              icon={FileText}
-              onClick={generateSummary}
+              icon={LogOut}
+              iconPosition="end"
+              buttonStyle="flush"
+              label={`Log Out`}  // {`api key: ${apiKey.slice(0, 3)}...`}
+              onClick={() => onLogout()}
             />
-            <Button
-              label="Download Log"
-              buttonStyle="action"
-              icon={Download}
-              onClick={downloadLogs}
-            />
-          </div>
-
-          {/* Topic View */}
-          <div className={`topic-section ${isTopicVisible ? 'expanded' : 'collapsed'}`}>
-            <button 
-              className="topic-toggle"
-              onClick={() => setIsTopicVisible(!isTopicVisible)}
-              title={isTopicVisible ? "Hide emotion wheel" : "Show emotion wheel"}
-            >
-              {isTopicVisible ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-            </button>
-            {isTopicVisible && (
+        </div>
+      </div>
+      <div className="content-main">
+        <div className="content-logs">
+          <div className="content-block events">
+          <div
+            className="flex h-screen flex-col"
+          >
+            <div className="topic-image-container border rounded-lg p-4 flex flex-col gap-2 w-200 m-3 h-auto" style={{ maxWidth: '100%', height: 'auto' }}>
               <TopicImageView
                 topicIdList={topicIdList}
                 topics={['Topic 1', 'Topic 2', 'Topic 3']}
                 themeId="default"
-                showEmotionWheel={true}
-                isConnected={isConnected}
+              />
+
+            </div>
+          </div>
+
+            <div className="content-block events">
+              <div className="visualization">
+                <div className="visualization-entry client">
+                  <canvas ref={clientCanvasRef} />
+                </div>
+                <div className="visualization-entry server">
+                  <canvas ref={serverCanvasRef} />
+                </div>
+              </div>
+            </div>
+          </div>
+            <div className="content-block-title" onClick={() => setShowConversation(!showConversation)} style={{cursor: 'pointer'}}>
+              conversation log {showConversation ? '▼' : '▶'}
+            </div>
+            {showConversation && (
+              <div className="content-block conversation">
+                <div className="content-block-body" data-conversation-content>
+                  {!items.length && `awaiting connection...`}
+                  {items.map((conversationItem, i) => {
+                    return (
+                      <div className="conversation-item" key={conversationItem.id}>
+                        <div className={`speaker ${conversationItem.role || ''}`}>
+                          <div>
+                            {(
+                              conversationItem.role || conversationItem.type
+                            ).replaceAll('_', ' ')}
+                          </div>
+                          <div
+                            className="close"
+                            onClick={() =>
+                              deleteConversationItem(conversationItem.id)
+                            }
+                          >
+                            <X />
+                          </div>
+                        </div>
+                        <div className={`speaker-content`}>
+                          {/* tool response */}
+                          {conversationItem.type === 'function_call_output' && (
+                            <div>{conversationItem.formatted.output || ''}</div>
+                          )}
+                          {/* tool call */}
+                          {!!conversationItem.formatted.tool && (
+                            <div>
+                              {conversationItem.formatted.tool.name}(
+                              {conversationItem.formatted.tool.arguments})
+                            </div>
+                          )}
+                          {!conversationItem.formatted.tool &&
+                            conversationItem.role === 'user' && (
+                              <div>
+                                {conversationItem.formatted.transcript ||
+                                  (conversationItem.formatted.audio?.length
+                                    ? '(awaiting transcript)'
+                                    : conversationItem.formatted.text ||
+                                      '(item sent)')}
+                              </div>
+                            )}
+                          {!conversationItem.formatted.tool &&
+                            conversationItem.role === 'assistant' && (
+                              <div>
+                                {conversationItem.formatted.transcript ||
+                                  conversationItem.formatted.text ||
+                                  '(truncated)'}
+                              </div>
+                            )}
+                          {/* {conversationItem.formatted.file && (
+                            <audio
+                              src={conversationItem.formatted.file.url}
+                              controls
+                            />
+                          )} */}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="content-block kv">
+                  <div className="content-block-title">{botName}'s memory</div>
+                  <div className="content-block-body content-kv">
+                    {JSON.stringify(memoryKv, null, 2)}
+                  </div>
+                </div>
+              </div>
+            )}
+          <div className="content-actions">
+            <Button
+              label="Download Log"
+              buttonStyle="regular"
+              onClick={() => {
+                const jsonlData = items.map(item => {
+                    let content = '';
+                    if (item.type === 'function_call_output') {
+                        content = item.formatted.output || '';
+                    } else if (item.formatted.tool) {
+                        content = `${item.formatted.tool.name}(${item.formatted.tool.arguments})` || '';
+                    } else {
+                        content = item.formatted.text || item.formatted.transcript || '';
+                    }
+                    
+                    return {
+                        // id: item.id,
+                        role: item.role || item.type,
+                        content: content,
+                        timestamp: new Date().toISOString()
+                    };
+                }).map(item => JSON.stringify(item)).join('\n');
+                const blob = new Blob([jsonlData], { type: 'application/jsonl' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `a-conect_log_${new Date().toISOString().replace(/:/g, '-')}.jsonl`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }}
+            />
+            <Toggle
+              defaultValue={true}
+              labels={['manual', 'vad']}
+              values={['none', 'server_vad']}
+              onChange={(_, value) => changeTurnEndType(value)}
+            />
+            <div className="spacer" />
+            {isConnected && canPushToTalk && (
+              <Button
+                label={isRecording ? 'release to send' : 'push to talk'}
+                buttonStyle={isRecording ? 'alert' : 'regular'}
+                disabled={!isConnected || !canPushToTalk}
+                onMouseDown={startRecording}
+                onMouseUp={stopRecording}
               />
             )}
+            <div className="spacer" />
+            {/* <Button
+              label={isConnected ? 'disconnect' : 'connect'}
+              iconPosition={isConnected ? 'end' : 'start'}
+              icon={isConnected ? X : Zap}
+              buttonStyle={isConnected ? 'regular' : 'action'}
+              onClick={
+                isConnected ? disconnectConversation : connectConversation
+              }
+            /> */}
           </div>
-
-          {/* Messages */}
-          <div 
-            className="messages-section" 
-            data-conversation-content
-            ref={messagesEndRef}
-          >
-            {showConversation && items.map((item) => {
-              console.log('Rendering message item:', item); // Debug log
-              return (
-              <div
-                key={item.id}
-                className={`message ${
-                  item.role === 'assistant' ? 'message-assistant' : 'message-user'
-                }`}
-              >
-                {/* User messages */}
-                {item.role === 'user' && (
-                  <>
-                    {item.formatted.text && (
-                      <>
-                        {(() => {
-                          try {
-                            const parsedMessage = JSON.parse(item.formatted.text);
-                            console.log('Parsed message:', parsedMessage); // Debug log
-                            
-                            if (parsedMessage.type === 'image_message') {
-                              return (
-                                <div className="image-message-container">
-                                  {parsedMessage.text !== '[Image uploaded]' && (
-                                    <div className="message-text">{parsedMessage.text}</div>
-                                  )}
-                                  <img 
-                                    src={parsedMessage.image} 
-                                    alt="User uploaded content"
-                                    className="message-image"
-                                    loading="lazy"
-                                    onError={(e) => {
-                                      console.error('Image failed to load:', e);
-                                    }}
-                                  />
-                                </div>
-                              );
-                            }
-                            return <div>{item.formatted.text}</div>;
-                          } catch (error) {
-                            console.log('Failed to parse message:', error); // Debug log
-                            return <div>{item.formatted.text}</div>;
-                          }
-                        })()}
-                      </>
-                    )}
-                    {item.formatted.transcript && <div>{item.formatted.transcript}</div>}
-                  </>
-                )}
-                
-                {/* Assistant messages */}
-                {item.role === 'assistant' && (
-                  <>
-                    {item.formatted.text && <div>{item.formatted.text}</div>}
-                    {item.formatted.audio && (
-                      <div className="audio-indicator">
-                        <span>🔊 Remi message</span>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )})}
-          </div>
-
-          {/* Input Area */}
-          <div className="input-section">
-            <div className="input-container">
-              <textarea
-                ref={textareaRef}
-                className="chat-input"
-                placeholder="Type your message..."
-                rows={1}
-                onKeyDown={async (e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    const text = textareaRef.current?.value.trim() || '';
-                    if (text) {
-                      await sendMessage(text);
-                      if (textareaRef.current) {
-                        textareaRef.current.value = '';
-                        textareaRef.current.style.height = 'auto';
-                      }
-                    }
-                  }
-                }}
-                onChange={(e) => {
-                  e.target.style.height = 'auto';
-                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                }}
+        </div>
+        <div className="content-right">
+          <div className="content-block map">
+            <div className="content-block-title">{botName}</div>
+            <div className="content-block-title bottom">
+              <Button
+                label={isConnected ? 'disconnect' : 'connect'}
+                iconPosition={isConnected ? 'end' : 'start'}
+                icon={isConnected ? X : Zap}
+                buttonStyle={isConnected ? 'regular' : 'action'}
+                onClick={
+                  isConnected ? disconnectConversation : connectConversation
+                }
               />
-              <div className="input-actions">
-                <ImageUpload 
-                  onImageUpload={(imageDataUrl) => {
-                    setPendingImage(imageDataUrl);
-                  }}
-                  isProcessing={isMessageProcessing}
-                />
-                <button 
-                  type="button"
-                  className="action-button send-button"
-                  onClick={async () => {
-                    const text = textareaRef.current?.value.trim() || '';
-                    
-                    try {
-                      setIsMessageProcessing(true);
-
-                      if (pendingImage) {
-                        await sendImageMessage(pendingImage, text);
-                      } else if (text) {
-                        await sendMessage(text);
-                      }
-
-                      // Clear input
-                      if (textareaRef.current) {
-                        textareaRef.current.value = '';
-                        textareaRef.current.style.height = 'auto';
-                      }
-                    } catch (error) {
-                      console.error('Failed to send message:', error);
-                      alert('Failed to send message. Please ensure you are connected and try again.');
-                    } finally {
-                      setIsMessageProcessing(false);
-                    }
-                  }}
-                >
-                  <Send size={20} />
-                </button>
-              </div>
             </div>
-
-            {/* Voice Controls */}
-            <div className="bottom-controls">
-              <div className="control-group">
-                <Toggle
-                  defaultValue={true}
-                  labels={['Manual', 'VAD']}
-                  values={['none', 'server_vad']}
-                  onChange={(_, value) => changeTurnEndType(value)}
-                />
-                {isConnected && voiceMode === 'none' && (
-                  <Button
-                    label={isRecording ? 'Release to Send' : 'Push to Talk'}
-                    buttonStyle={isRecording ? 'alert' : 'action'}
-                    disabled={!isConnected || !canPushToTalk}
-                    onMouseDown={startRecording}
-                    onMouseUp={stopRecording}
-                  />
-                )}
-                {isConnected && voiceMode === 'server_vad' && (
-                  <div className="vad-indicator">
-                    Voice Detection Active
-                  </div>
-                )}
-              </div>
+            <div className="content-block-body full" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <img src="/avatar.png" alt="Avatar" className="avatar" style={{ borderRadius: '50%' }} />
             </div>
           </div>
-
-          {/* Summary Modal */}
-          <SummaryModal
-            isOpen={summaryModalOpen}
-            onClose={() => setSummaryModalOpen(false)}
-            summary={summaryContent}
-          />
         </div>
-
-        {/* Avatar Section */}
-        <div className="avatar-section">
-          <h2 className="text-xl font-semibold mb-4">{botName}</h2>
-          <div className="avatar-container">
-            <img src="/avatar.png" alt="Avatar" className="avatar-image" />
-            <canvas ref={serverCanvasRef} className="wave-canvas" />
-          </div>
-          <Button
-            label={isConnected ? 'Disconnect' : 'Connect'}
-            icon={isConnected ? X : Zap}
-            buttonStyle={isConnected ? 'alert' : 'action'}
-            onClick={isConnected ? disconnectConversation : connectConversation}
-          />
-        </div>
-      </main>
+      </div>
     </div>
   );
 }

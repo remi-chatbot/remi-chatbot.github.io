@@ -16,8 +16,6 @@
     "autoprefixer": "^10.4.20",
     "axios": "^1.7.7",
     "dotenv": "^16.4.5",
-    "firebase": "^11.0.2",
-    "framer-motion": "^11.11.17",
     "gh-pages": "^6.2.0",
     "leaflet": "^1.9.4",
     "postcss": "^8.4.47",
