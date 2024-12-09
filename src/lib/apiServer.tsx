@@ -3,17 +3,20 @@ import axios from 'axios';
 const API_URL = "https://a-conect-auth.netlify.app/.netlify/functions";
 
 const apiService = {
-    getTokens: async (token: string): Promise<any> => {
-        try{
+    getTokens: async (apiKey: string): Promise<any> => {
+        try {
             const response = await axios.get(`${API_URL}/remi_oakey`, {
                 headers: {
-                    Authorization: `Bearer ${token}`
+                    Authorization: `Bearer ${apiKey}`
                 }
             });
-            console.log(`Received my API message: ${response.data.message}`)
-            return response.data;
+            
+            if (response.data && response.data.api_key) {
+                return response.data;
+            }
+            return undefined;
         } catch (error) {
-            console.error(`Failed to login. Error: ${error}`)
+            console.error(`Failed to verify API key. Error: ${error}`);
             return undefined;
         }
     },
