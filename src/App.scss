@@ -1,15 +1,61 @@
 [data-component='App'] {
-  height: 100%;
-  width: 100%;
+  background: linear-gradient(135deg, 
+    #b794f4 0%,    /* Light purple */
+    #805ad5 25%,   /* Medium purple */
+    #553c9a 50%,   /* Dark purple */
+    #322659 75%,   /* Very dark purple */
+    #1a1625 100%   /* Near black purple */
+  );
+  color: #e2d9f3;
+  min-height: 100vh;
   position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 20%, rgba(183, 148, 244, 0.4) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(85, 60, 154, 0.4) 0%, transparent 50%);
+    pointer-events: none;
+  }
 }
 
 .loading-page {
+  background: linear-gradient(135deg, 
+    #b794f4 0%,
+    #805ad5 25%,
+    #553c9a 50%,
+    #322659 75%,
+    #1a1625 100%
+  );
+  color: #e2d9f3;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
   font-size: 1.5rem;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border: 3px solid transparent;
+    border-top-color: #8a4baf;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .figure-container {
