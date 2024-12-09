@@ -1,3 +1,5 @@
+import { systemPromptsV1, getTopicSystemPrompt, getEndingSysPrompt } from "./prompts";
+
 export enum SysPromptOpt {
     DEFAULT = 'DEFAULT',
     TALKY = 'TALKY',

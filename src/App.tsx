@@ -5,14 +5,15 @@ import ConsolePage from './pages/ConsolePage';  // Assuming you have a homepage
 import LoginPage from './pages/LoginPage';
 import './App.scss';
 import apiService from './lib/apiServer';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './config/firebase';
+
+const generateRandomInt = (min: number, max: number) => {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);  // Track login status
   const [isLoading, setIsLoading] = useState(false);  // Track loading state
   const hasLoadedRef = useRef(false);  // Add this ref
-  const [firebaseUser, setFirebaseUser] = useState<any>(null);
 
   // Simulate authentication (this would normally come from an authentication service)
   const loadClient = async (apiToken: string) => {
@@ -36,23 +37,6 @@ function App() {
     }
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setFirebaseUser(user);
-        // You might want to automatically fetch tokens here
-        if (!isAuthenticated) {
-          loadClient(user.uid);
-        }
-      } else {
-        setFirebaseUser(null);
-        setIsAuthenticated(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
   const handleLogin = async (oai_key: string, img_base_url: string, api_token: string) => {
     // Store credentials
     localStorage.setItem('acnt::isAuthenticated', 'true');
@@ -64,14 +48,9 @@ function App() {
     setIsAuthenticated(true);
   };
 
-  const handleLogout = async () => {
-    try {
-      await auth.signOut();
-      localStorage.clear();
-      setIsAuthenticated(false);
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
+  const handleLogout = () => {
+    localStorage.clear();
+    setIsAuthenticated(false);
   };
 
   return (
