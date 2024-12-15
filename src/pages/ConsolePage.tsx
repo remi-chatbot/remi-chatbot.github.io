@@ -1385,29 +1385,23 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
   const handlePause = async () => {
     try {
       if (isPaused) {
-        // Resuming conversation
+        // Resume conversation
         if (!isConnected) {
           await connectConversation();
         } else {
-          const client = clientRef.current;
-          const wavRecorder = wavRecorderRef.current;
-          
-          // If in VAD mode, restart recording
+          // Restart recording if in VAD mode
           if (voiceMode === 'server_vad') {
-            await wavRecorder.begin(); // Make sure recorder is initialized
-            await wavRecorder.record((data) => {
-              if (client.isConnected()) {
-                client.appendInputAudio(data.mono);
-              }
-            });
+            const wavRecorder = wavRecorderRef.current;
+            const client = clientRef.current;
+            await wavRecorder.record((data) => client.appendInputAudio(data.mono));
           }
         }
         setIsPaused(false);
       } else {
-        // Pausing conversation
+        // Pause conversation
+        const client = clientRef.current;
         const wavRecorder = wavRecorderRef.current;
         const wavStreamPlayer = wavStreamPlayerRef.current;
-        const client = clientRef.current;
 
         // Stop recording if active
         if (isRecording || wavRecorder.getStatus() === 'recording') {
@@ -1430,45 +1424,19 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
         setIsPaused(true);
       }
     } catch (error) {
-      console.error('Error handling pause/resume:', error);
-      // Reset state if there's an error
-      setIsPaused(false);
-      setIsRecording(false);
+      console.error('Error handling pause:', error);
     }
   };
 
-  // Add the saveNewSummary function here, near other utility functions
-  const saveNewSummary = async (userId: string, summaryContent: string) => {
-    try {
-      // Get the count of existing sessions for this user
-      const q = query(
-        collection(db, 'conversation_summaries'),
-        where('userId', '==', userId)
-      );
-      const querySnapshot = await getDocs(q);
-      const sessionNumber = querySnapshot.size + 1;
-
-      // Add new summary with session number
-      await addDoc(collection(db, 'conversation_summaries'), {
-        userId,
-        summary: summaryContent,
-        timestamp: serverTimestamp(),
-        sessionNumber
-      });
-    } catch (error) {
-      console.error('Error saving summary:', error);
-      throw error;
-    }
-  };
-
-  // Then modify handleEndConversation to use the new function
   const handleEndConversation = async () => {
     try {
       // First disconnect everything
       await disconnectConversation();
       
-      // Show loading state in modal
+      // Generate summary
       setShowEndConfirmation(false);
+      
+      // Show loading state in modal
       setSummaryModalOpen(true);
       setSummaryContent('Generating summary...');
 
@@ -1478,7 +1446,27 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
       // Save to Firebase if user is logged in
       if (user && summaryContent) {
         try {
-          await saveNewSummary(user.uid, summaryContent);
+          // Get the existing summary document if it exists
+          const q = query(
+            collection(db, 'conversation_summaries'),
+            where('userId', '==', user.uid),
+            orderBy('timestamp', 'desc'),
+            limit(1)
+          );
+          
+          const querySnapshot = await getDocs(q);
+          
+          // If there's an existing summary, delete it
+          if (!querySnapshot.empty) {
+            await deleteDoc(querySnapshot.docs[0].ref);
+          }
+
+          // Add new summary
+          await addDoc(collection(db, 'conversation_summaries'), {
+            userId: user.uid,
+            summary: summaryContent,
+            timestamp: serverTimestamp()
+          });
         } catch (error) {
           console.error('Error saving summary to Firebase:', error);
         }
@@ -1576,19 +1564,18 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
         collection(db, 'conversation_summaries'),
         where('userId', '==', userId),
         orderBy('timestamp', 'desc'),
+        limit(1)
       );
 
       const querySnapshot = await getDocs(q);
       if (querySnapshot.empty) return '';
 
-      const summaries = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        const timestamp = data.timestamp?.toDate?.() || new Date();
-        const formattedDate = timestamp.toLocaleDateString();
-        return `Session (${formattedDate}):\n${data.summary}\n`;
-      });
-  
-      return `Previous Sessions:\n\n${summaries.join('\n---\n\n')}\n\nUse this context to maintain continuity and build upon previous discussions while avoiding repetition of already covered topics.`;
+      const doc = querySnapshot.docs[0];
+      const data = doc.data();
+      const timestamp = data.timestamp?.toDate?.() || new Date();
+      const formattedDate = timestamp.toLocaleDateString();
+      
+      return `Previous Session (${formattedDate}):\n${data.summary}\n\nUse this context to maintain continuity and build upon previous discussions while avoiding repetition of already covered topics.`;
     } catch (error) {
       console.error('Error fetching summary:', error);
       return '';
