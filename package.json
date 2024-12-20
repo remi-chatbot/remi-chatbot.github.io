@@ -42,7 +42,7 @@
     "zip": "zip -r realtime-api-console.zip . -x 'node_modules' 'node_modules/*' 'node_modules/**' '.git' '.git/*' '.git/**' '.DS_Store' '*/.DS_Store' 'package-lock.json' '*.zip' '*.tar.gz' '*.tar' '.env'",
     "relay": "nodemon ./relay-server/index.js",
     "predeploy": "npm run build",
-    "deploy": "git push origin HEAD:main --force"
+    "deploy": "cp -r build/* . && cp build/.* . 2>/dev/null || true && git add . && git commit -m 'Deploy to main' && git push origin HEAD:main --force"
   },
   "eslintConfig": {
     "extends": [
