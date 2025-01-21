@@ -6,7 +6,7 @@ import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { instructions } from '../utils/conversation_config.js';
 import { WavRenderer } from '../utils/wav_renderer';
 
-import { X, LogOut, Zap, ArrowUp, ArrowDown, FileText, Download, Send, ChevronUp, ChevronDown, MessageSquare, Mic, Play, Pause } from 'react-feather';
+import { X, LogOut, Zap, ArrowUp, ArrowDown, FileText, Download, Send, ChevronUp, ChevronDown, MessageSquare, Mic, Play, Pause, Menu } from 'react-feather';
 import { Button } from '../components/button/Button';
 import { Toggle } from '../components/toggle/Toggle';
 import { Map } from '../components/Map';
@@ -26,6 +26,7 @@ import { db } from '../config/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, limit, deleteDoc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../config/firebase';
+
 
 /**
  * Type for result from get_weather() function call
@@ -712,27 +713,48 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
   }
 
   .chat-section {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
     background: #2d2d2d;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 100px);
+    overflow: hidden;
+
+    .messages-section {
+      flex: 1;
+      width: 100%;
+      height: calc(100vh - 120px);
+      overflow-y: auto;
+      padding: 1.5rem;
+      margin: 0;
+      box-sizing: border-box;
+      background: #2d2d2d;
+    }
+
+    .input-section {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      padding: 1rem;
+      background: #363636;
+      border-top: 1px solid #4a4a4a;
+      box-sizing: border-box;
+    }
   }
 
   .topic-section {
     padding: 1.5rem;
     background: #363636;
     border-radius: 16px 16px 0 0;
-  }
-
-  .messages-section {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1.5rem;
-    scroll-behavior: smooth;
-    height: calc(100vh - 400px);
-    background: #2d2d2d;
   }
 
   .messages-section::-webkit-scrollbar {
@@ -814,12 +836,6 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
     font-size: 0.9rem;
     color: #a0a0a0;
     margin-top: 0.5rem;
-  }
-
-  .input-section {
-    padding: 1.5rem;
-    background: #363636;
-    border-radius: 0 0 16px 16px;
   }
 
   .input-container {
@@ -1252,7 +1268,75 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
       }
     }
   }
+
+  .mobile-menu-toggle {
+    display: none;
+  }
+
+  .mobile-menu {
+    display: none;
+  }
+
+  @media screen and (max-width: 768px) {
+    .chat-section {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      background: #2d2d2d;
+
+      .messages-section {
+        width: 100%;
+        height: calc(100vh - 120px);
+        margin: 0;
+        padding: 0.75rem;
+        box-sizing: border-box;
+        background: #2d2d2d;
+        
+        .message {
+          max-width: 90%;
+        }
+      }
+
+      .input-section {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        padding: 1rem;
+        background: #363636;
+        border-top: 1px solid #4a4a4a;
+        box-sizing: border-box;
+      }
+    }
+
+    // Adjust main container for mobile
+    .main-container {
+      max-width: none;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #2d2d2d;
+    }
+  }
   `;
+
+  // Add this state for mobile menu
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Add this function to handle menu toggle
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
 
   // Update the speaking state when audio starts/stops
   useEffect(() => {
@@ -1621,14 +1705,61 @@ Context Instructions:
       <style>{styles}</style>
       <style>{additionalStyles}</style>
       
+      {/* Mobile Menu Toggle Button */}
+      <button 
+        className="mobile-menu-toggle"
+        onClick={toggleMobileMenu}
+        aria-label="Toggle menu"
+      >
+        {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
+      {/* Mobile Menu */}
+      <div className={`mobile-menu ${isMobileMenuOpen ? 'open' : ''}`}>
+        <div className="menu-items">
+          <Button
+            icon={FileText}
+            buttonStyle="action"
+            label="Summary"
+            onClick={generateSummary}
+          />
+          <Button
+            icon={Download}
+            buttonStyle="action"
+            label="Download"
+            onClick={downloadLogs}
+          />
+          <a 
+            href="https://aihealth.ischool.utexas.edu/research/Chatbot/research_chatbot.html" 
+            className="research-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Research
+          </a>
+          <a 
+            href="https://www.surveymonkey.com/r/VNKG3NS" 
+            className="feedback-link"
+          >
+            Feedback
+          </a>
+          <Button 
+            icon={LogOut} 
+            buttonStyle="action" 
+            label="Log Out" 
+            onClick={onLogout} 
+          />
+        </div>
+      </div>
+
       {/* Header */}
       <header className="p-4 bg-[#2d2d2d]">
-        <div className="max-w-[1400px] mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
+        <div className="header-container max-w-[1400px] mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="header-buttons flex items-center gap-4">
             <img src="/openai-logomark.svg" alt="Logo" className="h-8" />
             <h1 className="text-xl font-semibold">Remi</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="header-buttons flex flex-wrap items-center justify-center gap-4">
             <Button
               icon={FileText}
               buttonStyle="action"
@@ -1641,7 +1772,7 @@ Context Instructions:
               label="Download"
               onClick={downloadLogs}
             />
-            <div className="separator" />
+            <div className="separator hidden sm:block" />
             <a 
               href="https://aihealth.ischool.utexas.edu/research/Chatbot/research_chatbot.html" 
               className="text-white hover:text-blue-400"
@@ -1892,12 +2023,9 @@ Context Instructions:
                         buttonStyle="action"
                         onClick={connectConversation}
                       />
-                      <Button
-                        label="Switch to Chat"
-                        icon={MessageSquare}
-                        buttonStyle="regular"
-                        onClick={() => handleModeChange('chat')}
-                      />
+                     <button onClick={() => handleModeChange('chat')}>
+                    <MessageSquare size={20} />
+                  </button>
                     </div>
                   )}
                 </div>
