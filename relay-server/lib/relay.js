@@ -38,8 +38,8 @@ export class RealtimeRelay {
     try {
       this.log(`Connecting to OpenAI...`);
       await client.connect();
-      // Set voice after connection is established
-      await client.updateSession({ voice: 'shimmer' });
+      // Change voice to 'nova' (female voice)
+      await client.updateSession({ voice: 'nova' });
     } catch (e) {
       this.log(`Error connecting to OpenAI: ${e.message}`);
       ws.close();

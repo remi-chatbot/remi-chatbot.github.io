@@ -7,11 +7,13 @@ export function Toggle({
   values,
   labels,
   onChange = () => {},
+  onPushToTalk = () => {},
 }: {
   defaultValue?: string | boolean;
   values?: string[];
   labels?: string[];
   onChange?: (isEnabled: boolean, value: string) => void;
+  onPushToTalk?: (isPressed: boolean) => void;
 }) {
   if (typeof defaultValue === 'string') {
     defaultValue = !!Math.max(0, (values || []).indexOf(defaultValue));
@@ -27,6 +29,37 @@ export function Toggle({
     const index = +v;
     setValue(v);
     onChange(v, (values || [])[index]);
+    if (values && values[index] === 'none') {
+      onPushToTalk(v);
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!value) {
+      e.stopPropagation();
+      onPushToTalk(true);
+    }
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (!value) {
+      e.stopPropagation();
+      onPushToTalk(false);
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!value) {
+      e.stopPropagation();
+      onPushToTalk(true);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!value) {
+      e.stopPropagation();
+      onPushToTalk(false);
+    }
   };
 
   useEffect(() => {
@@ -50,16 +83,19 @@ export function Toggle({
       onClick={toggleValue}
       data-enabled={value.toString()}
     >
-      {labels && (
-        <div className="label left" ref={leftRef}>
-          {labels[0]}
-        </div>
-      )}
-      {labels && (
-        <div className="label right" ref={rightRef}>
-          {labels[1]}
-        </div>
-      )}
+      <div 
+        className="label left" 
+        ref={leftRef}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {labels?.[0]}
+      </div>
+      <div className="label right" ref={rightRef}>
+        {labels?.[1]}
+      </div>
       <div className="toggle-background" ref={bgRef}></div>
     </div>
   );

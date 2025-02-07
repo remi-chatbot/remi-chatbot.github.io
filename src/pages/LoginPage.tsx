@@ -8,8 +8,6 @@ import { auth } from '../config/firebase';
 import { 
     createUserWithEmailAndPassword, 
     signInWithEmailAndPassword,
-    GoogleAuthProvider,
-    signInWithPopup
 } from 'firebase/auth';
 
 interface LoginPageProps {
@@ -23,17 +21,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     const [error, setError] = useState('');
     const [apiKey, setApiKey] = useState('');
     const [showApiKeyInput, setShowApiKeyInput] = useState(false);
-
-    const handleGoogleSignIn = async () => {
-        try {
-            const provider = new GoogleAuthProvider();
-            const result = await signInWithPopup(auth, provider);
-            const user = result.user;
-            setShowApiKeyInput(true); // Show API key input after successful Firebase auth
-        } catch (error: any) {
-            setError(error.message);
-        }
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -168,13 +155,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                             icon={LogIn}
                             buttonStyle={'regular'}
                             type="submit"
-                        />
-
-                        <Button
-                            label="Sign in with Google"
-                            buttonStyle={'regular'}
-                            onClick={handleGoogleSignIn}
-                            type="button"
                         />
 
                         <button

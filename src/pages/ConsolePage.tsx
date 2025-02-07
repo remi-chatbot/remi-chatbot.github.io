@@ -6,7 +6,7 @@ import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { instructions } from '../utils/conversation_config.js';
 import { WavRenderer } from '../utils/wav_renderer';
 
-import { X, LogOut, Zap, ArrowUp, ArrowDown, FileText, Download, Send, ChevronUp, ChevronDown, MessageSquare, Mic, Play, Pause } from 'react-feather';
+import { X, LogOut, Zap, ArrowUp, ArrowDown, FileText, Download, Send, ChevronUp, ChevronDown, MessageSquare, Mic, Play, Pause, Menu, ExternalLink, MessageCircle } from 'react-feather';
 import { Button } from '../components/button/Button';
 import { Toggle } from '../components/toggle/Toggle';
 import { Map } from '../components/Map';
@@ -233,7 +233,6 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
       await wavRecorder.begin();
       await wavStreamPlayer.connect();
 
-      // Fetch previous summaries if user is logged in
       let previousSummaries = '';
       if (user) {
         previousSummaries = await fetchPreviousSummaries(user.uid);
@@ -938,7 +937,7 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
   }
   `;
 
-  // Add these additional styles
+  // Update the styles section with these additional styles
   const additionalStyles = `
   .top-controls {
     display: flex;
@@ -1252,7 +1251,148 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
       }
     }
   }
+
+  .mobile-menu-toggle {
+    display: none;
+  }
+
+  .mobile-menu {
+    display: none;
+  }
+
+  @media screen and (max-width: 768px) {
+    .chat-section {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      background: #2d2d2d;
+
+      .messages-section {
+        width: 100%;
+        height: calc(100vh - 120px);
+        margin: 0;
+        padding: 0.75rem;
+        box-sizing: border-box;
+        background: #2d2d2d;
+        
+        .message {
+          max-width: 90%;
+        }
+      }
+
+      .input-section {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        padding: 1rem;
+        background: #363636;
+        border-top: 1px solid #4a4a4a;
+        box-sizing: border-box;
+      }
+    }
+
+    // Adjust main container for mobile
+    .main-container {
+      max-width: none;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #2d2d2d;
+    }
+  }
+
+  // Fix white space and zoom issues
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  .modern-layout {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .main-container {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .chat-section {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+
+    .messages-section {
+      margin: 0;
+      padding: 1rem;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    .input-section {
+      margin: 0;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+  }
+
+  @media screen and (max-width: 768px) {
+    .modern-layout,
+    .main-container,
+    .chat-section,
+    .messages-section,
+    .input-section {
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+      left: 0;
+      right: 0;
+      overflow-x: hidden;
+    }
+
+    .messages-section {
+      padding: 1rem;
+    }
+
+    .input-section {
+      padding: 1rem;
+    }
+  }
   `;
+
+  // Add this state for mobile menu
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Add this function to handle menu toggle
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
 
   // Update the speaking state when audio starts/stops
   useEffect(() => {
@@ -1359,23 +1499,14 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
   };
 
   // Add new state for mode
-  const [interactionMode, setInteractionMode] = useState<'voice' | 'chat'>('voice'); // Default to voice
+  const [interactionMode, setInteractionMode] = useState<'voice'>('voice');
 
   // Add connection status button to voice mode and handle mode-specific behaviors
-  const handleModeChange = async (newMode: 'voice' | 'chat') => {
+  const handleModeChange = async (newMode: 'voice') => {
     setInteractionMode(newMode);
     
     // Stop any ongoing speech when switching to chat mode
-    if (newMode === 'chat') {
-      // Instead of trying to stop the player directly, 
-      // we can disconnect the conversation which will stop any ongoing audio
-      if (isConnected) {
-        await disconnectConversation();
-      }
-      if (isRecording) {
-        await stopRecording();
-      }
-    }
+    
   };
 
   // Add these new state variables near your other state declarations
@@ -1621,14 +1752,76 @@ Context Instructions:
       <style>{styles}</style>
       <style>{additionalStyles}</style>
       
-      {/* Header */}
-      <header className="p-4 bg-[#2d2d2d]">
-        <div className="max-w-[1400px] mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <img src="/openai-logomark.svg" alt="Logo" className="h-8" />
-            <h1 className="text-xl font-semibold">Remi</h1>
+      {/* Mobile Menu Button - Always visible on mobile */}
+      <button 
+        className="fixed top-4 right-4 z-[1001] sm:hidden bg-[#363636] p-2 rounded-full"
+        onClick={toggleMobileMenu}
+        aria-label="Toggle menu"
+      >
+        {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
+      {/* Enhanced Mobile Menu */}
+      <div className={`fixed inset-y-0 right-0 w-64 bg-[#2d2d2d] transform transition-transform duration-300 ease-in-out z-[1000] ${
+        isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+      } sm:hidden`}>
+        <div className="flex flex-col h-full pt-20 px-4">
+          <div className="flex flex-col gap-4">
+            <Button
+              icon={FileText}
+              buttonStyle="action"
+              label="Summary"
+              onClick={() => {
+                generateSummary();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full"
+            />
+            <Button
+              icon={Download}
+              buttonStyle="action"
+              label="Download"
+              onClick={() => {
+                downloadLogs();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full"
+            />
+            <Button
+              icon={() => <ExternalLink size={20} />}
+              buttonStyle="action"
+              label="Research"
+              onClick={() => window.open('https://aihealth.ischool.utexas.edu/research/Chatbot/research_chatbot.html', '_blank')}
+            />
+            <Button
+              icon={() => <MessageCircle size={20} />}
+              buttonStyle="action"
+              label="Feedback"
+              onClick={() => window.open('https://www.surveymonkey.com/r/VNKG3NS', '_blank')}
+            />
+            <Button 
+              icon={LogOut} 
+              buttonStyle="action" 
+              label="Log Out" 
+              onClick={() => {
+                onLogout();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full"
+            />
           </div>
-          <div className="flex items-center gap-4">
+        </div>
+      </div>
+
+      {/* Header */}
+      <header className="p-4 fixed top-0 w-full z-50">
+        <div className="header-container max-w-[1400px] mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="header-buttons flex items-center gap-4">
+            <img src="/openai-logomark.svg" alt="Logo" className="h-8" />
+            <h1 className="text-xl font-semibold text-white">Remi</h1>
+          </div>
+          {/* Desktop buttons with translucent background */}
+          <div className="header-buttons hidden sm:flex items-center justify-center gap-4 bg-opacity-10">
             <Button
               icon={FileText}
               buttonStyle="action"
@@ -1641,280 +1834,109 @@ Context Instructions:
               label="Download"
               onClick={downloadLogs}
             />
-            <div className="separator" />
-            <a 
-              href="https://aihealth.ischool.utexas.edu/research/Chatbot/research_chatbot.html" 
-              className="text-white hover:text-blue-400"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Research
-            </a>
-            <a 
-              href="https://www.surveymonkey.com/r/VNKG3NS" 
-              className="text-white hover:text-blue-400"
-            >
-              Feedback
-            </a>
-            <Button icon={LogOut} buttonStyle="action" label="Log Out" onClick={onLogout} />
+            <Button
+              icon={() => <ExternalLink size={20} />}
+              buttonStyle="action"
+              label="Research"
+              onClick={() => window.open('https://aihealth.ischool.utexas.edu/research/Chatbot/research_chatbot.html', '_blank')}
+            />
+            <Button
+              icon={() => <MessageCircle size={20} />}
+              buttonStyle="action"
+              label="Feedback"
+              onClick={() => window.open('https://www.surveymonkey.com/r/VNKG3NS', '_blank')}
+            />
+            <Button 
+              icon={LogOut} 
+              buttonStyle="action" 
+              label="Log Out" 
+              onClick={onLogout} 
+            />
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main Content - Remove chat mode, only keep voice interface */}
       <main className="main-container">
-        {interactionMode === 'chat' ? (
-          // Chat Mode Layout
-          <div className="chat-section">
-            {/* Top Controls */}
-            <div className="top-controls">
-              <Button
-                icon={Mic}
-                buttonStyle="action"
-                label="Return to Voice Mode"
-                onClick={() => handleModeChange('voice')}
-              />
-            </div>
-
-            {/* Topic View */}
-            <div className={`topic-section ${isTopicVisible ? 'expanded' : 'collapsed'}`}>
-              <button 
-                className="topic-toggle"
-                onClick={() => setIsTopicVisible(!isTopicVisible)}
-                title={isTopicVisible ? "Hide emotion wheel" : "Show emotion wheel"}
-              >
-                {isTopicVisible ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-              </button>
-              {isTopicVisible && (
-                <TopicImageView
-                  topicIdList={topicIdList}
-                  topics={['Topic 1', 'Topic 2', 'Topic 3']}
-                  themeId="default"
-                  showEmotionWheel={true}
-                  isConnected={isConnected}
-                />
-              )}
-            </div>
-
-            {/* Messages */}
-            <div 
-              className="messages-section" 
-              data-conversation-content
-              ref={messagesEndRef}
-            >
-              {showConversation && items.map((item) => {
-                console.log('Rendering message item:', item); // Debug log
-                return (
-                <div
-                  key={item.id}
-                  className={`message ${
-                    item.role === 'assistant' ? 'message-assistant' : 'message-user'
-                  }`}
-                >
-                  {/* User messages */}
-                  {item.role === 'user' && (
-                    <div className="message-user">
-                      <div className="message-content">
-                        <div>{item.formatted?.text || item.formatted?.transcript}</div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Assistant messages */}
-                  {item.role === 'assistant' && (
-                    <div className="message-assistant">
-                      <div className="assistant-message-container">
-                        <div className="message-content">
-                          <div>{item.formatted?.text || item.formatted?.transcript}</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )})}
-            </div>
-
-            {/* Input Area */}
-            <div className="input-section">
-              <div className="input-container">
-                <textarea
-                  ref={textareaRef}
-                  className="chat-input"
-                  placeholder="Type your message..."
-                  rows={1}
-                  onKeyDown={async (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      const text = textareaRef.current?.value.trim() || '';
-                      if (text) {
-                        await sendMessage(text);
-                        if (textareaRef.current) {
-                          textareaRef.current.value = '';
-                          textareaRef.current.style.height = 'auto';
-                        }
-                      }
-                    }
-                  }}
-                  onChange={(e) => {
-                    e.target.style.height = 'auto';
-                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                  }}
-                />
-                <div className="input-actions">
-                  <ImageUpload 
-                    onImageUpload={(imageDataUrl) => {
-                      setPendingImage(imageDataUrl);
-                    }}
-                    isProcessing={isMessageProcessing}
-                  />
-                  <button 
-                    type="button"
-                    className="action-button send-button"
-                    onClick={async () => {
-                      const text = textareaRef.current?.value.trim() || '';
-                      
-                      try {
-                        setIsMessageProcessing(true);
-
-                        if (pendingImage) {
-                          await sendImageMessage(pendingImage, text);
-                        } else if (text) {
-                          await sendMessage(text);
-                        }
-
-                        // Clear input
-                        if (textareaRef.current) {
-                          textareaRef.current.value = '';
-                          textareaRef.current.style.height = 'auto';
-                        }
-                      } catch (error) {
-                        console.error('Failed to send message:', error);
-                        alert('Failed to send message. Please ensure you are connected and try again.');
-                      } finally {
-                        setIsMessageProcessing(false);
-                      }
-                    }}
-                  >
-                    <Send size={20} />
-                  </button>
-                </div>
+        <div className="voice-mode-container">
+          <div className="remi-interface-section">
+            <div className="centered-avatar-section">
+              <div className="avatar-container">
+                <div className={`halo-glow ${isSpeaking ? 'speaking' : ''}`}></div>
+                <img src="/avatar.png" alt="Avatar" className="avatar-image" />
+              </div>
+              
+              <div className="buttons-container">
+                {isConnected ? (
+                  <>
+                    <button 
+                      className={`pause-button ${isPaused ? 'paused' : ''}`}
+                      onClick={handlePause}
+                    >
+                      {isPaused ? (
+                        <>
+                          <Play size={20} />
+                          Resume
+                        </>
+                      ) : (
+                        <>
+                          <Pause size={20} />
+                          Pause
+                        </>
+                      )}
+                    </button>
+                    
+                    <button 
+                      className="end-button"
+                      onClick={() => setShowEndConfirmation(true)}
+                    >
+                      <X size={20} />
+                      End
+                    </button>
+                  </>
+                ) : (
+                  <div className="start-buttons">
+                    <Button
+                      label="Start Conversation"
+                      icon={Play}
+                      buttonStyle="action"
+                      onClick={connectConversation}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Voice Controls */}
-              <div className="bottom-controls">
-                <div className="control-group">
-                  <Toggle
-                    defaultValue={true}
-                    labels={['Push to Talk', 'Auto']}
-                    values={['none', 'server_vad']}
-                    onChange={(_, value) => changeTurnEndType(value)}
+              <div className="control-buttons">
+                <Toggle
+                  defaultValue={true}
+                  labels={['Push to Talk', 'Auto']}
+                  values={['none', 'server_vad']}
+                  onChange={(_, value) => changeTurnEndType(value)}
+                />
+                {isConnected && voiceMode === 'none' && (
+                  <Button
+                    label={isRecording ? 'Stop Recording' : 'Start Recording'}
+                    buttonStyle={isRecording ? 'alert' : 'action'}
+                    disabled={!isConnected || !canPushToTalk}
+                    onClick={isRecording ? stopRecording : startRecording}
                   />
-                  {isConnected && voiceMode === 'none' && (
-                    <Button
-                      label={isRecording ? 'Stop Recording' : 'Start Recording'}
-                      buttonStyle={isRecording ? 'alert' : 'action'}
-                      disabled={!isConnected || !canPushToTalk}
-                      onClick={isRecording ? stopRecording : startRecording}
-                    />
-                  )}
-                  {isConnected && voiceMode === 'server_vad' && (
-                    <div className="vad-indicator">
-                      Voice Detection Active
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Summary Modal */}
-            <SummaryModal
-              isOpen={summaryModalOpen}
-              onClose={() => setSummaryModalOpen(false)}
-              summary={summaryContent}
-            />
-          </div>
-        ) : (
-          // Voice Mode Layout
-          <div className="voice-mode-container">
-            {/* Left Side - Emotion Wheel */}
-            <div className="emotion-wheel-section">
-              <TopicImageView
-                topicIdList={topicIdList}
-                topics={['Topic 1', 'Topic 2', 'Topic 3']}
-                themeId="default"
-                showEmotionWheel={true}
-                isConnected={isConnected}
-              />
-            </div>
-
-            {/* Right Side - Remi Interface */}
-            <div className="remi-interface-section">
-              <div className="centered-avatar-section">
-                
-                <div className="avatar-container">
-                  <div className={`halo-glow ${isSpeaking ? 'speaking' : ''}`}></div>
-                  <img src="/avatar.png" alt="Avatar" className="avatar-image" />
-                </div>
-                
-                <div className="buttons-container">
-                  {isConnected ? (
-                    <>
-                      <button 
-                        className={`pause-button ${isPaused ? 'paused' : ''}`}
-                        onClick={handlePause}
-                      >
-                        {isPaused ? (
-                          <>
-                            <Play size={20} />
-                            Resume
-                          </>
-                        ) : (
-                          <>
-                            <Pause size={20} />
-                            Pause
-                          </>
-                        )}
-                      </button>
-                      
-                      <button 
-                        className="end-button"
-                        onClick={() => setShowEndConfirmation(true)}
-                      >
-                        <X size={20} />
-                        End
-                      </button>
-                    </>
-                  ) : (
-                    <div className="start-buttons">
-                      <Button
-                        label="Start Conversation"
-                        icon={Play}
-                        buttonStyle="action"
-                        onClick={connectConversation}
-                      />
-                      <Button
-                        label="Switch to Chat"
-                        icon={MessageSquare}
-                        buttonStyle="regular"
-                        onClick={() => handleModeChange('chat')}
-                      />
-                    </div>
-                  )}
-                </div>
+                )}
+                {isConnected && voiceMode === 'server_vad' && (
+                  <div className="vad-indicator">
+                    Voice Detection Active
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        )}
-
+        </div>
       </main>
 
       {/* Add this outside of your main layout */}
       <SummaryModal
         isOpen={summaryModalOpen}
-        onClose={() => {
-          setSummaryModalOpen(false);
-          setSummaryContent('');
-        }}
+        onClose={() => setSummaryModalOpen(false)}
         summary={summaryContent}
       />
 
