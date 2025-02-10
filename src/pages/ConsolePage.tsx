@@ -6,7 +6,7 @@ import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { instructions } from '../utils/conversation_config.js';
 import { WavRenderer } from '../utils/wav_renderer';
 
-import { X, LogOut, Zap, ArrowUp, ArrowDown, FileText, Download, Send, ChevronUp, ChevronDown, MessageSquare, Mic, Play, Pause, Menu } from 'react-feather';
+import { X, LogOut, Zap, ArrowUp, ArrowDown, FileText, Download, ChevronUp, ChevronDown, MessageSquare, Mic, Play, Pause, Menu, ExternalLink, MessageCircle } from 'react-feather';
 import { Button } from '../components/button/Button';
 import { Toggle } from '../components/toggle/Toggle';
 import { Map } from '../components/Map';
@@ -17,7 +17,7 @@ import { isJsxOpeningLikeElement } from 'typescript';
 
 import apiService from '../lib/apiServer';
 
-import { getInitialSystemPrompt, SysPromptOpt } from '../agent/systemMessages';
+import { getInitialSystemPrompt, SysPromptOpt, updatePromptAfterFiveMinutes } from '../agent/systemMessages';
 import { envConfig } from "../utils/env.config";
 import { SummaryModal } from '../components/SummaryModal/index';
 import ImageUpload from '../components/ImageUpload';
@@ -222,6 +222,7 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
    */
   const connectConversation = useCallback(async () => {
     try {
+      console.log('Connecting conversation with initial prompt (Phase 1)...');
       const client = clientRef.current;
       const wavRecorder = wavRecorderRef.current;
       const wavStreamPlayer = wavStreamPlayerRef.current;
@@ -230,14 +231,17 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
       
       startTimeRef.current = new Date().toISOString();
       setIsConnected(true);
+      setPromptTimerStarted(true);
+      console.log('Connection successful, 5-minute timer started');
 
       await wavRecorder.begin();
       await wavStreamPlayer.connect();
 
-      // Fetch previous summaries if user is logged in
-      let previousSummaries = '';
+      // Make sure we have the latest previous summaries
+      let currentPreviousSummaries = '';
       if (user) {
-        previousSummaries = await fetchPreviousSummaries(user.uid);
+        currentPreviousSummaries = await fetchPreviousSummaries(user.uid);
+        setPreviousSummaries(currentPreviousSummaries);
       }
 
       await client.updateSession({
@@ -245,7 +249,7 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
           SysPromptOpt.DEFAULT, 
           JSON.stringify(memoryKv), 
           botName,
-          previousSummaries
+          currentPreviousSummaries // Use the fetched summaries
         ),
         input_audio_transcription: { model: 'whisper-1' },
         turn_detection: { type: 'server_vad' }
@@ -261,17 +265,18 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
     } catch (error) {
       console.error('Connection failed:', error);
       setIsConnected(false);
+      setPromptTimerStarted(false);
       throw error;
     }
-  }, [voiceMode, isPaused, user]);
+  }, [voiceMode, isPaused, user, memoryKv, botName]);
 
   /**
    * Disconnect and reset conversation state
    */
   const disconnectConversation = useCallback(async () => {
+    console.log('Disconnecting conversation, resetting prompt timer...');
     setIsConnected(false);
-    // setRealtimeEvents([]);
-    // setItems([]);
+    setPromptTimerStarted(false);
 
     const client = clientRef.current;
     client.disconnect();
@@ -483,6 +488,7 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
     client.updateSession({ instructions: getInitialSystemPrompt(SysPromptOpt.DEFAULT, JSON.stringify(memoryKv), botName) });
     // Set transcription, otherwise we don't get user transcriptions back
     client.updateSession({ input_audio_transcription: { model: 'whisper-1' } });
+    client.updateSession({ voice: 'shimmer' });
 
     // set initial turn change type
     client.updateSession({turn_detection: { type: 'server_vad' }});
@@ -1007,51 +1013,38 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
   }
 
   .voice-mode-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr; // Split screen into two equal parts
-    gap: 2rem;
-    min-height: calc(100vh - 80px); // Increased height, reduced offset
-    width: 100%;     // Ensure full width
-    max-width: none; // Remove any max-width constraints
-    background: #2d2d2d;
-    border-radius: 16px;
-    padding: 2rem;
-    margin: 0;       // Remove any margins
-  }
-
-  .emotion-wheel-section {
     display: flex;
-    flex-direction: column;
-    align-items: center;
     justify-content: center;
-    border-right: 1px solid #404040;
-    padding-right: 2rem;
-    width: 100%;     // Ensure full width
-    height: 100%;    // Ensure full height
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    padding-top: 60px; /* Account for header */
   }
 
   .remi-interface-section {
     display: flex;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
-    padding-left: 2rem;
-    width: 100%;     // Ensure full width
-    height: 100%;    // Ensure full height
+    align-items: center;
+    width: 100%;
+    max-width: 800px; /* Optional: limit maximum width */
+    margin: 0 auto;
   }
 
   .centered-avatar-section {
-    text-align: center;
-    padding: 2rem;
-    width: 100%;     // Ensure full width
-    max-width: 600px; // Increased max-width
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    width: 100%;
   }
 
-  .main-container {
-    max-width: none; // Remove max-width constraint
-    margin: 0;       // Remove margins
-    padding: 1rem;   // Reduced padding
-    width: 100%;     // Ensure full width
+  .avatar-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 
   .buttons-container {
@@ -1059,6 +1052,14 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
     gap: 1rem;
     justify-content: center;
     align-items: center;
+    margin-top: 2rem;
+  }
+
+  /* Ensure the main container takes full height */
+  .main-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
   }
 
   .mode-toggle-button {
@@ -1153,23 +1154,6 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
     gap: 1rem;
     justify-content: center;
     align-items: center;
-  }
-
-  .buttons-container {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    margin-top: 2rem;
-  }
-
-  .avatar-container {
-    position: relative;
-    width: 200px;
-    height: 200px;
-    margin: 2rem auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
   .halo-glow {
@@ -1358,58 +1342,8 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
     }
   }, [items]);
 
-  // Add this check before sending messages
-  const sendMessage = async (text: string) => {
-    if (!isConnected) {
-      try {
-        await connectConversation();
-      } catch (error) {
-        console.error('Failed to connect:', error);
-        alert('Failed to connect. Please try again.');
-        return;
-      }
-    }
-
-    try {
-      setShowConversation(true); // Ensure conversation is visible
-      await clientRef.current.sendUserMessageContent([
-        { type: 'input_text', text }
-      ]);
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      alert('Failed to send message. Please try again.');
-    }
-  };
-
-  // Add this effect to handle conversation visibility
-  useEffect(() => {
-    if (items.length > 0) {
-      setShowConversation(true);
-    }
-  }, [items]);
-
-  // Add this with your other refs
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Add this effect to handle microphone permissions
-  useEffect(() => {
-    const requestMicrophonePermission = async () => {
-      try {
-        await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch (error) {
-        console.error('Microphone permission denied:', error);
-        alert('Please enable microphone access to use voice features.');
-      }
-    };
-
-    requestMicrophonePermission();
-  }, []);
-
   // Add this state for storing pending image
   const [pendingImage, setPendingImage] = useState<string | null>(null);
-
-  // Add this state near your other state declarations
-  const [isMessageProcessing, setIsMessageProcessing] = useState(false);
 
   // Add this console log to verify the message structure
   const sendImageMessage = async (imageDataUrl: string, text: string = '') => {
@@ -1435,7 +1369,6 @@ const ConsolePage: React.FC<ConsolePageProps> = ({ onLogout, apiKey }) => {
 
       // Clear states after successful send
       setPendingImage(null);
-      setIsMessageProcessing(false);
     } catch (error) {
       console.error('Failed to send image:', error);
       throw error;
@@ -1697,6 +1630,55 @@ Context Instructions:
     }
   };
 
+  // Add this state for the prompt timer
+  const [promptTimerStarted, setPromptTimerStarted] = useState(false);
+
+  // Add this state for storing previous summaries
+  const [previousSummaries, setPreviousSummaries] = useState<string>('');
+
+  // Fetch previous summaries when component mounts
+  useEffect(() => {
+    const loadPreviousSummaries = async () => {
+      if (user) {
+        try {
+          const summaries = await fetchPreviousSummaries(user.uid);
+          setPreviousSummaries(summaries);
+          console.log('Loaded previous summaries:', summaries || 'None');
+        } catch (error) {
+          console.error('Error loading previous summaries:', error);
+        }
+      }
+    };
+    
+    loadPreviousSummaries();
+  }, [user]);
+
+  // Add timer effect
+  useEffect(() => {
+    let promptTimer: NodeJS.Timeout;
+    
+    if (promptTimerStarted && isConnected) {
+      console.log('Starting 5-minute timer for prompt update...');
+      
+      promptTimer = setTimeout(async () => {
+        try {
+          console.log('5 minutes elapsed, updating prompt...');
+          const client = clientRef.current;
+          await updatePromptAfterFiveMinutes(client);
+        } catch (error) {
+          console.error('Failed to update prompt after 5 minutes:', error);
+        }
+      }, 5 * 60 * 1000);
+    }
+    
+    return () => {
+      if (promptTimer) {
+        console.log('Cleaning up prompt timer');
+        clearTimeout(promptTimer);
+      }
+    };
+  }, [promptTimerStarted, isConnected]);
+
   /**
    * Render the application
    */
@@ -1772,22 +1754,24 @@ Context Instructions:
               label="Download"
               onClick={downloadLogs}
             />
-            <div className="separator hidden sm:block" />
-            <a 
-              href="https://aihealth.ischool.utexas.edu/research/Chatbot/research_chatbot.html" 
-              className="text-white hover:text-blue-400"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Research
-            </a>
-            <a 
-              href="https://www.surveymonkey.com/r/VNKG3NS" 
-              className="text-white hover:text-blue-400"
-            >
-              Feedback
-            </a>
-            <Button icon={LogOut} buttonStyle="action" label="Log Out" onClick={onLogout} />
+            <Button
+              icon={() => <ExternalLink size={20} />}
+              buttonStyle="action"
+              label="Research"
+              onClick={() => window.open('https://aihealth.ischool.utexas.edu/research/Chatbot/research_chatbot.html', '_blank')}
+            />
+            <Button
+              icon={() => <MessageCircle size={20} />}
+              buttonStyle="action"
+              label="Feedback"
+              onClick={() => window.open('https://www.surveymonkey.com/r/VNKG3NS', '_blank')}
+            />
+            <Button 
+              icon={LogOut} 
+              buttonStyle="action" 
+              label="Log Out" 
+              onClick={onLogout} 
+            />
           </div>
         </div>
       </header>
@@ -1797,13 +1781,14 @@ Context Instructions:
         {interactionMode === 'chat' ? (
           // Chat Mode Layout
           <div className="chat-section">
-            {/* Top Controls */}
-            <div className="top-controls">
+            {/* Top Controls - Make sure it's above other elements */}
+            <div className="top-controls fixed top-[60px] left-0 right-0 z-[100] bg-[#2d2d2d] flex justify-between items-center p-4 sm:px-6">
               <Button
                 icon={Mic}
                 buttonStyle="action"
                 label="Return to Voice Mode"
                 onClick={() => handleModeChange('voice')}
+                className="voice-return-button"
               />
             </div>
 
@@ -1821,8 +1806,6 @@ Context Instructions:
                   topicIdList={topicIdList}
                   topics={['Topic 1', 'Topic 2', 'Topic 3']}
                   themeId="default"
-                  showEmotionWheel={true}
-                  isConnected={isConnected}
                 />
               )}
             </div>
@@ -1832,6 +1815,7 @@ Context Instructions:
               className="messages-section" 
               data-conversation-content
               ref={messagesEndRef}
+              style={{ paddingTop: '60px' }}  // Add padding to prevent content from going under the button
             >
               {showConversation && items.map((item) => {
                 console.log('Rendering message item:', item); // Debug log
@@ -1865,98 +1849,6 @@ Context Instructions:
               )})}
             </div>
 
-            {/* Input Area */}
-            <div className="input-section">
-              <div className="input-container">
-                <textarea
-                  ref={textareaRef}
-                  className="chat-input"
-                  placeholder="Type your message..."
-                  rows={1}
-                  onKeyDown={async (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      const text = textareaRef.current?.value.trim() || '';
-                      if (text) {
-                        await sendMessage(text);
-                        if (textareaRef.current) {
-                          textareaRef.current.value = '';
-                          textareaRef.current.style.height = 'auto';
-                        }
-                      }
-                    }
-                  }}
-                  onChange={(e) => {
-                    e.target.style.height = 'auto';
-                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                  }}
-                />
-                <div className="input-actions">
-                  <ImageUpload 
-                    onImageUpload={(imageDataUrl) => {
-                      setPendingImage(imageDataUrl);
-                    }}
-                    isProcessing={isMessageProcessing}
-                  />
-                  <button 
-                    type="button"
-                    className="action-button send-button"
-                    onClick={async () => {
-                      const text = textareaRef.current?.value.trim() || '';
-                      
-                      try {
-                        setIsMessageProcessing(true);
-
-                        if (pendingImage) {
-                          await sendImageMessage(pendingImage, text);
-                        } else if (text) {
-                          await sendMessage(text);
-                        }
-
-                        // Clear input
-                        if (textareaRef.current) {
-                          textareaRef.current.value = '';
-                          textareaRef.current.style.height = 'auto';
-                        }
-                      } catch (error) {
-                        console.error('Failed to send message:', error);
-                        alert('Failed to send message. Please ensure you are connected and try again.');
-                      } finally {
-                        setIsMessageProcessing(false);
-                      }
-                    }}
-                  >
-                    <Send size={20} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Voice Controls */}
-              <div className="bottom-controls">
-                <div className="control-group">
-                  <Toggle
-                    defaultValue={true}
-                    labels={['Push to Talk', 'Auto']}
-                    values={['none', 'server_vad']}
-                    onChange={(_, value) => changeTurnEndType(value)}
-                  />
-                  {isConnected && voiceMode === 'none' && (
-                    <Button
-                      label={isRecording ? 'Stop Recording' : 'Start Recording'}
-                      buttonStyle={isRecording ? 'alert' : 'action'}
-                      disabled={!isConnected || !canPushToTalk}
-                      onClick={isRecording ? stopRecording : startRecording}
-                    />
-                  )}
-                  {isConnected && voiceMode === 'server_vad' && (
-                    <div className="vad-indicator">
-                      Voice Detection Active
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
             {/* Summary Modal */}
             <SummaryModal
               isOpen={summaryModalOpen}
@@ -1967,21 +1859,9 @@ Context Instructions:
         ) : (
           // Voice Mode Layout
           <div className="voice-mode-container">
-            {/* Left Side - Emotion Wheel */}
-            <div className="emotion-wheel-section">
-              <TopicImageView
-                topicIdList={topicIdList}
-                topics={['Topic 1', 'Topic 2', 'Topic 3']}
-                themeId="default"
-                showEmotionWheel={true}
-                isConnected={isConnected}
-              />
-            </div>
-
-            {/* Right Side - Remi Interface */}
+            {/* Removed emotion-wheel-section */}
             <div className="remi-interface-section">
               <div className="centered-avatar-section">
-                
                 <div className="avatar-container">
                   <div className={`halo-glow ${isSpeaking ? 'speaking' : ''}`}></div>
                   <img src="/avatar.png" alt="Avatar" className="avatar-image" />
@@ -2023,9 +1903,6 @@ Context Instructions:
                         buttonStyle="action"
                         onClick={connectConversation}
                       />
-                     <button onClick={() => handleModeChange('chat')}>
-                    <MessageSquare size={20} />
-                  </button>
                     </div>
                   )}
                 </div>
