@@ -1,6 +1,6 @@
 // App.tsx
 import { useState, useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import ConsolePage from './pages/ConsolePage';  // Assuming you have a homepage
 import LoginPage from './pages/LoginPage';
 import './App.scss';

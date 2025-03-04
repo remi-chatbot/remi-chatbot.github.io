@@ -2,7 +2,7 @@
 import "../App.scss";
 import { X, LogIn, Zap, ArrowUp, ArrowDown } from 'react-feather';
 import { Button } from '../components/button/Button';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import apiService from '../lib/apiServer';
 import { auth } from '../config/firebase';
 import { 
@@ -19,8 +19,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     const [password, setPassword] = useState('');
     const [isSignUp, setIsSignUp] = useState(false);
     const [error, setError] = useState('');
-    const [apiKey, setApiKey] = useState('');
+    const [apiKey, setApiKey] = useState('UTIS_remi24%OAI_DEMO#');
     const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+
+    useEffect(() => {
+        if (showApiKeyInput && apiKey === 'UTIS_remi24%OAI_DEMO#') {
+            const event = { preventDefault: () => {} } as React.FormEvent<HTMLFormElement>;
+            handleApiKeySubmit(event);
+        }
+    }, [showApiKeyInput]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -70,10 +77,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                         </label>
                         <input
                             className="appearance-none block w-full bg-gray-200 text-gray-700 border rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white"
-                            type="text"
+                            type="password"
                             value={apiKey}
                             onChange={(e) => setApiKey(e.target.value)}
                             required
+                            readOnly
                         />
                     </div>
 

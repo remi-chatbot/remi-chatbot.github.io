@@ -42,7 +42,7 @@
     "zip": "zip -r realtime-api-console.zip . -x 'node_modules' 'node_modules/*' 'node_modules/**' '.git' '.git/*' '.git/**' '.DS_Store' '*/.DS_Store' 'package-lock.json' '*.zip' '*.tar.gz' '*.tar' '.env'",
     "relay": "nodemon ./relay-server/index.js",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build -b main"
+    "deploy": "gh-pages --dist build -b gh-pages -f"
   },
   "eslintConfig": {
     "extends": [
@@ -68,5 +68,5 @@
     "gh-pages": "^6.3.0",
     "nodemon": "^3.1.7"
   },
-  "homepage": "https://remi-chatbot.github.io"
+  "homepage": "https://remi-chatbot.github.io/"
 }
