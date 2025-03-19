@@ -1882,7 +1882,7 @@ Context Instructions:
                         ) : (
                           <>
                             <Pause size={20} />
-                            Pause
+                            Pause!
                           </>
                         )}
                       </button>
